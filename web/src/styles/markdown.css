@@ -1,0 +1,187 @@
+/* 全局字号：16px root，Chakra rem 同比放大，正文更易读 */
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 水粉画（gouache）背景：柔和的水彩晕染，保持简洁 ────── */
+body {
+  background:
+    radial-gradient(1100px 520px at 10% -12%, rgba(255, 176, 150, 0.22), transparent 62%),
+    radial-gradient(1000px 480px at 90% -18%, rgba(140, 196, 255, 0.24), transparent 60%),
+    radial-gradient(900px 500px at 68% 108%, rgba(168, 232, 198, 0.20), transparent 62%),
+    #faf6f0;
+  background-attachment: fixed;
+}
+
+/* ── Markdown 内容样式（莫奈配色）────────────────────────── */
+.markdown-content {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: inherit;
+  word-break: break-word;
+}
+
+.markdown-content > *:first-child { margin-top: 0; }
+.markdown-content > *:last-child { margin-bottom: 0; }
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 1.4em 0 0.5em;
+}
+
+.markdown-content h1 { font-size: 1.45rem; }
+.markdown-content h2 { font-size: 1.25rem; }
+.markdown-content h3 { font-size: 1.1rem; }
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 { font-size: 1rem; }
+
+.markdown-content p { margin: 0 0 0.85em; }
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0 0 0.85em;
+  padding-left: 1.6em;
+}
+
+.markdown-content ul { list-style-type: disc; }
+.markdown-content ol { list-style-type: decimal; }
+.markdown-content li { margin: 0.25em 0; }
+.markdown-content li > ul,
+.markdown-content li > ol { margin: 0.25em 0; }
+
+/* 行内代码 */
+.markdown-content code {
+  font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  background: rgba(13, 138, 111, 0.1);
+  color: #0d8a6f;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
+/* 代码块 */
+.markdown-content pre {
+  background: #1f2329;
+  color: #e6e8eb;
+  padding: 0.9em 1.1em;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0 0 0.85em;
+  line-height: 1.6;
+}
+
+.markdown-content pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.9em;
+}
+
+/* 引用 */
+.markdown-content blockquote {
+  margin: 0 0 0.85em;
+  padding: 0.2em 0 0.2em 1em;
+  border-left: 3px solid #0d8a6f;
+  color: #5f6571;
+}
+
+.markdown-content strong { font-weight: 700; }
+
+.markdown-content a {
+  color: #0d8a6f;
+  text-decoration: none;
+}
+.markdown-content a:hover { text-decoration: underline; }
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid #e8eaed;
+  margin: 1.4em 0;
+}
+
+/* 表格 */
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 0.85em;
+  font-size: 0.95em;
+}
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid #e8eaed;
+  padding: 0.45em 0.7em;
+  text-align: left;
+}
+.markdown-content th {
+  background: rgba(13, 138, 111, 0.06);
+  font-weight: 600;
+}
+
+.markdown-content img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+/* ── 内容区超细滚动条（话题页右缘；主帖/回复很多时用于内部滚动）── */
+.forum-thin-scroll {
+  scrollbar-width: thin;                                     /* Firefox */
+  scrollbar-color: rgba(120, 130, 140, 0.45) transparent;
+}
+.forum-thin-scroll::-webkit-scrollbar {
+  width: 5px;                                                /* 很细 */
+  height: 5px;
+}
+.forum-thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.forum-thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(120, 130, 140, 0.45);
+  border-radius: 9999px;
+}
+.forum-thin-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 130, 140, 0.7);
+}
+
+/* ── 隐藏自带滚动条（帖子内容区滚动改由右侧钓鱼线刻度条呈现）── */
+.no-scrollbar {
+  scrollbar-width: none;                          /* Firefox */
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* ── 编辑器工具栏浅灰、输入区纯白（仅浅色模式）────────────── */
+.w-md-editor[data-color-mode] { color: inherit; }
+[data-color-mode="light"] .w-md-editor,
+[data-color-mode="light"] .w-md-editor-content,
+[data-color-mode="light"] .w-md-editor-text,
+[data-color-mode="light"] .w-md-editor textarea {
+  background: #ffffff;                                     /* 输入区纯白 */
+}
+[data-color-mode="light"] .w-md-editor-toolbar {
+  background: #f0f1f3;                                     /* 工具栏浅灰 */
+  border-bottom: 1px solid #e6e7ea;
+}
+[data-color-mode="light"] .w-md-editor-toolbar li > button {
+  color: #4b5563 !important;
+}
+[data-color-mode="light"] .w-md-editor-toolbar li > button:hover {
+  color: #0d8a6f !important;
+}
