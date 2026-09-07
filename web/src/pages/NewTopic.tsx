@@ -18,8 +18,10 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { FiSend, FiEdit3, FiLogIn, FiX, FiSmile } from 'react-icons/fi';
-import MDEditor from '@uiw/react-md-editor';
+import MDEditor from '@uiw/react-md-editor/nohighlight';
 import '@uiw/react-md-editor/markdown-editor.css';
+import rehypeOnDemandHighlight from '../lib/highlightRehype';
+import { ensureSyntaxHighlight } from '../lib/highlightProvider';
 import { api } from '../lib/api';
 import { useStore } from '../lib/store';
 
@@ -45,6 +47,7 @@ export default function NewTopic() {
 
   useEffect(() => {
     api.listCategories().then(setCats).catch(() => {});
+    ensureSyntaxHighlight().catch(() => {}); // 懒加载语法高亮器
   }, []);
 
   const submit = () => {
@@ -179,6 +182,7 @@ export default function NewTopic() {
               onChange={(v) => setRaw(v || '')}
               height={340}
               preview="edit"
+              previewOptions={{ rehypePlugins: [rehypeOnDemandHighlight()] }}
               textareaProps={{ placeholder: '正文内容…\n\n支持 **粗体**、*斜体*、`代码`、列表、引用等 Markdown 语法' }}
             />
           </Box>

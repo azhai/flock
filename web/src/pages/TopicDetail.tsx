@@ -28,8 +28,10 @@ import { FiMessageSquare, FiThumbsUp, FiLock, FiSend, FiMapPin, FiArrowLeft, FiB
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
-import MDEditor from '@uiw/react-md-editor';
+import MDEditor from '@uiw/react-md-editor/nohighlight';
 import '@uiw/react-md-editor/markdown-editor.css';
+import rehypeOnDemandHighlight from '../lib/highlightRehype';
+import { ensureSyntaxHighlight } from '../lib/highlightProvider';
 import { api } from '../lib/api';
 import { useStore } from '../lib/store';
 import Sidebar from '../components/Sidebar';
@@ -65,6 +67,11 @@ export default function TopicDetail() {
       .then((d: any) => setPosts(d.data || []))
       .catch(() => {});
   }, [id]);
+
+  // 提前懒加载语法高亮器，保证打开 Preview 时已就绪
+  useEffect(() => {
+    ensureSyntaxHighlight().catch(() => {});
+  }, []);
 
   const isStaff = !!user && (user.role === 'admin' || user.role === 'moderator');
   const canEditTopic = !!user && (isStaff || user.username === topic?.user?.username);
@@ -469,6 +476,7 @@ export default function TopicDetail() {
                 onChange={(v) => setReply(v || '')}
                 height={180}
                 preview="edit"
+                previewOptions={{ rehypePlugins: [rehypeOnDemandHighlight()] }}
                 textareaProps={{ placeholder: '写下你的回复…（支持 Markdown，单回车自动换行）' }}
               />
             </Box>

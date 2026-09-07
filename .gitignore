@@ -26,8 +26,10 @@ optimized-rules.txt
 *.sqlite
 
 # Environment variables
+.air.test.toml
 .air.toml
 .env
+web/package-lock.json
 
 # Repository storage
 dist/

@@ -185,3 +185,35 @@ body {
 [data-color-mode="light"] .w-md-editor-toolbar li > button:hover {
   color: #0d8a6f !important;
 }
+
+/* ── 代码高亮 token 配色（浅色，GitHub 风格）────────────────── */
+.markdown-content pre code .token.comment,
+.markdown-content pre code .token.prolog,
+.markdown-content pre code .token.cdata {
+  color: #6a737d;
+  font-style: italic;
+}
+.markdown-content pre code .token.punctuation { color: #8a9199; }
+.markdown-content pre code .token.keyword,
+.markdown-content pre code .token.selector,
+.markdown-content pre code .token.operator { color: #cf222e; }
+.markdown-content pre code .token.keyword.operator { color: #cf222e; }
+.markdown-content pre code .token.string,
+.markdown-content pre code .token.char,
+.markdown-content pre code .token.attr-value,
+.markdown-content pre code .token.regex { color: #0a3069; }
+.markdown-content pre code .token.number,
+.markdown-content pre code .token.boolean,
+.markdown-content pre code .token.constant { color: #0550ae; }
+.markdown-content pre code .token.function,
+.markdown-content pre code .token.class-name,
+.markdown-content pre code .token.maybe-class-name,
+.markdown-content pre code .token.builtin { color: #8250df; }
+.markdown-content pre code .token.property,
+.markdown-content pre code .token.attr-name,
+.markdown-content pre code .token.tag { color: #116329; }
+.markdown-content pre code .token.atrule,
+.markdown-content pre code .token.doctype,
+.markdown-content pre code .token.decorator { color: #953800; }
+.markdown-content pre code .token.variable,
+.markdown-content pre code .token.parameter { color: #953800; }

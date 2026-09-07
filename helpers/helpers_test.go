@@ -21,7 +21,7 @@ func TestSlugify(t *testing.T) {
 		"Hello World":    "hello-world",
 		"Foo  Bar  Baz":  "foo-bar-baz",
 		"--x--":          "x",
-		"中文标题测试":          "中文标题测试",
+		"中文标题测试":         "中文标题测试",
 		"Go & Rust":      "go-rust",
 		"Hello__World!!": "hello-world",
 		"123":            "123",

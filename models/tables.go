@@ -1,3 +1,4 @@
+//go:generate goent-gen fields --force ./
 package models
 
 import (
@@ -116,7 +117,7 @@ type Topic struct {
 	Posts    []*Post   `goe:"o2m,fk:topic_id"`
 
 	// 附加挂载（非列，仅用于 DTO 组装）
-	Tags         []*Tag `goe:"-"`
+	Tags         []*Tag  `goe:"-"`
 	Participants []*User `goe:"-"`
 	Bookmarked   bool    `goe:"-"`
 	Followed     bool    `goe:"-"`
