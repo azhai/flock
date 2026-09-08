@@ -30,7 +30,7 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import MDEditor from '@uiw/react-md-editor/nohighlight';
 import '@uiw/react-md-editor/markdown-editor.css';
-import rehypeOnDemandHighlight from '../lib/highlightRehype';
+import CodeBlock from '../components/CodeBlock';
 import { ensureSyntaxHighlight } from '../lib/highlightProvider';
 import { api } from '../lib/api';
 import { useStore } from '../lib/store';
@@ -126,7 +126,7 @@ export default function TopicDetail() {
     const target = p.my_vote === vote ? 0 : vote; // 再点一次取消
     api.votePost(p.id, target)
       .then((d: any) => {
-        setPosts(posts.map((x) => (x.id === p.id ? { ...x, score: d.score, my_vote: d.my_vote } : x)));
+        setPosts(posts.map((x) => (x.id === p.id ? { ...x, score: d.score, my_vote: d.my_vote, like_count: d.like_count } : x)));
       })
       .catch(() => toast({ title: '投票失败', status: 'error' }));
   };
@@ -394,7 +394,7 @@ export default function TopicDetail() {
         </Flex>
       </Box>
 
-      {/* 内容区：主帖 + 回复。长帖或多回复时在区域内滚动；滚动条隐藏，改由右侧"钓鱼线刻度条"呈现 */}
+      {/* 内容区：主帖 + 回复。长帖或多回复时在区域内滚动；显示右侧粗滚动条，滚轮可直接滚动 */}
       <Box
         ref={scrollRef}
         onScroll={handleScroll}
@@ -402,8 +402,8 @@ export default function TopicDetail() {
         overflowY="auto"
         flex="1"
         minH={0}
-        pr={{ base: 0.5, md: 0 }}
-        className="no-scrollbar"
+        pr={{ base: 1, md: 1 }}
+        className="forum-thin-scroll"
       >
       {/* 帖子流：主贴直接显示，回复用卡片分隔。每帖包一层 div 供右侧节点定位 */}
       {firstPost && (
@@ -465,7 +465,7 @@ export default function TopicDetail() {
                 onChange={(v) => setReply(v || '')}
                 height={180}
                 preview="edit"
-                previewOptions={{ rehypePlugins: [rehypeOnDemandHighlight()] }}
+                previewOptions={{ components: { code: CodeBlock } }}
                 textareaProps={{ placeholder: '写下你的回复…（支持 Markdown，单回车自动换行）' }}
               />
             </Box>
@@ -499,7 +499,7 @@ export default function TopicDetail() {
           ref={railRef}
           flex="1"
           pos="relative"
-          w="18px"
+          w="26px"
           minH="160px"
           cursor="grab"
           userSelect="none"
@@ -512,7 +512,7 @@ export default function TopicDetail() {
           onWheel={onRailWheel}
         >
           {/* 轨道线（细绳），即"钓鱼线"本体 */}
-          <Box pos="absolute" top="0" bottom="0" left="50%" w="2px" transform="translateX(-1px)" borderRadius="full" bg={borderColor} opacity="0.85" />
+          <Box pos="absolute" top="0" bottom="0" left="50%" w="3px" transform="translateX(-1.5px)" borderRadius="full" bg={borderColor} opacity="0.85" />
           {/* 刻度：小圆点，按各帖/回复的实际落点分布；点按直接跳转 */}
           {allPosts.map((p: any, i: number) => {
             if (i === 0) return null; // 去掉顶部（主贴）那个圆点
@@ -524,8 +524,8 @@ export default function TopicDetail() {
                 left="50%"
                 top={(nodeTops[i] ?? 0) + '%'}
                 transform="translate(-50%,-50%)"
-                w={cur ? '8px' : '6px'}
-                h={cur ? '8px' : '6px'}
+                w={cur ? '12px' : '9px'}
+                h={cur ? '12px' : '9px'}
                 borderRadius="full"
                 bg={cur ? accent : textMuted}
                 opacity={cur ? 1 : 0.55}
@@ -543,7 +543,7 @@ export default function TopicDetail() {
             pos="absolute"
             left="50%"
             transform="translateX(-50%)"
-            w="4px"
+            w="6px"
             h={`${thumbHeight}px`}
             top={`${thumbTop}px`}
             borderRadius="full"
@@ -604,8 +604,8 @@ function PostCard({ post, user, isOp, canEdit, updatePostBody, deletePostBody, o
         <Button size="xs" variant="ghost" h={7} px={2} color={post.my_vote === 1 ? accent : textMuted} _hover={{ bg: accent + '14' }} onClick={() => onVote(post, 1)} aria-label="顶">
           <Icon as={FiArrowUp} boxSize={4} />
         </Button>
-        <Text w="42px" textAlign="center" fontSize="sm" fontWeight="700" color={post.score > 0 ? accent : post.score < 0 ? '#c53030' : textSecondary}>
-          {post.score ?? 0}
+        <Text w="42px" textAlign="center" fontSize="sm" fontWeight="700" color={post.like_count > 0 ? accent : post.like_count < 0 ? '#c53030' : textSecondary}>
+          {post.like_count ?? 0}
         </Text>
         <Button size="xs" variant="ghost" h={7} px={2} color={post.my_vote === -1 ? '#c53030' : textMuted} _hover={{ bg: '#fed7d714' }} onClick={() => onVote(post, -1)} aria-label="踩">
           <Icon as={FiArrowDown} boxSize={4} />
@@ -646,7 +646,7 @@ function PostCard({ post, user, isOp, canEdit, updatePostBody, deletePostBody, o
         ) : (
           <>
             <Box className="markdown-content" color={textPrimary} fontSize="md" lineHeight="1.75">
-              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{post.raw}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={{ code: CodeBlock }}>{post.raw}</ReactMarkdown>
             </Box>
             {actions}
           </>
@@ -680,7 +680,7 @@ function PostCard({ post, user, isOp, canEdit, updatePostBody, deletePostBody, o
           ) : (
             <>
               <Box className="markdown-content" color={textPrimary} fontSize="md" lineHeight="1.75">
-                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{post.raw}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={{ code: CodeBlock }}>{post.raw}</ReactMarkdown>
               </Box>
               {actions}
             </>

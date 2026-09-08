@@ -17,7 +17,7 @@ import {
   Grid,
   GridItem,
 } from '@chakra-ui/react';
-import { FiMessageSquare, FiMapPin, FiPlus } from 'react-icons/fi';
+import { FiMessageSquare, FiMapPin, FiPlus, FiEye, FiArrowUp } from 'react-icons/fi';
 import { api } from '../lib/api';
 import Sidebar from '../components/Sidebar';
 import Pagination from '../components/Pagination';
@@ -164,7 +164,7 @@ export default function Home() {
                 const parts = t.participants?.length ? t.participants : (t.user ? [t.user] : []);
                 return (
                   <Box key={t.id} as={RouterLink} to={`/topics/${t.id}?cat=${catSlug || ''}${tag ? `&tag=${tag}` : ''}`} display="block" px={3} py={4} _hover={{ bg: bgHover }} transition="background 0.12s ease">
-                    <Grid templateColumns="minmax(0, 1fr) 56px 56px 120px" gap={4} alignItems="center">
+                    <Grid templateColumns="minmax(0, 1fr) 52px 52px 110px" gap={4} alignItems="center">
                       <Box minW={0}>
                         <HStack spacing={1.5} mb={1}>
                           {t.pinned && <Icon as={FiMapPin} boxSize={4} color="#d97706" flexShrink={0} />}
@@ -195,12 +195,18 @@ export default function Home() {
                           </Text>
                         </Flex>
                       </Box>
-                      <Text fontSize="sm" color={textSecondary} textAlign="center" display={{ base: 'none', sm: 'block' }}>
-                        {t.posts_count}
-                      </Text>
-                      <Text fontSize="sm" color={textSecondary} textAlign="center" display={{ base: 'none', sm: 'block' }}>
-                        {t.views_count}
-                      </Text>
+                      <HStack justifyContent="center" spacing={1} display={{ base: 'none', sm: 'flex' }}>
+                        <Icon as={FiArrowUp} boxSize={3.5} color={t.like_count > 0 ? accent : textMuted} />
+                        <Text fontSize="sm" fontWeight={t.like_count > 0 ? '700' : '500'} color={t.like_count > 0 ? accent : textSecondary}>
+                          {t.like_count}
+                        </Text>
+                      </HStack>
+                      <HStack justifyContent="center" spacing={1} display={{ base: 'none', sm: 'flex' }}>
+                        <Icon as={FiEye} boxSize={3.5} color={textMuted} />
+                        <Text fontSize="sm" color={textSecondary}>
+                          {t.views_count}
+                        </Text>
+                      </HStack>
                       <Text fontSize="sm" color={textMuted} textAlign="right" display={{ base: 'none', md: 'block' }} isTruncated>
                         {t.last_posted_at ? formatTimeAgo(t.last_posted_at) : '—'}
                       </Text>

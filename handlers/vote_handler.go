@@ -39,24 +39,44 @@ func VotePost(c *echo.Context) error {
 
 	myVote := 0
 	removed := false
+	// delta 为 like_count 净变化：顶 +1 / 踩 -1 / 撤销回退原票
+	delta := 0
 	err = db.BeginTransaction(func(tx model.Transaction) error {
 		// 撤销逻辑：请求 0，或与当前票相同（再点一次取消）
 		if req.Vote == 0 || (existing != nil && req.Vote == existing.Vote) {
 			if existing != nil {
 				removed = true
-				return db.PostVote.Delete().
+				delta = -existing.Vote
+				if err := db.PostVote.Delete().
 					Filter(goent.Equals(db.PostVote.Field("id"), existing.ID)).
 					OnTransaction(tx).
-					Exec()
+					Exec(); err != nil {
+					return err
+				}
+			} else {
+				return nil
 			}
+		} else if existing == nil {
+			delta = req.Vote
+			v := &models.PostVote{PostID: post.ID, UserID: user.ID, Vote: req.Vote}
+			if err := db.PostVote.Insert().OnTransaction(tx).One(v); err != nil {
+				return err
+			}
+		} else {
+			delta = req.Vote - existing.Vote
+			existing.Vote = req.Vote
+			if err := db.PostVote.Save().OnTransaction(tx).One(existing); err != nil {
+				return err
+			}
+		}
+		// 同步当前获赞数（like_count），保证顶/踩后显示与排序实时一致
+		if delta == 0 {
 			return nil
 		}
-		if existing == nil {
-			v := &models.PostVote{PostID: post.ID, UserID: user.ID, Vote: req.Vote}
-			return db.PostVote.Insert().OnTransaction(tx).One(v)
+		if err := setPostLikeCount(tx, post.ID, post.LikeCount+delta); err != nil {
+			return err
 		}
-		existing.Vote = req.Vote
-		return db.PostVote.Save().OnTransaction(tx).One(existing)
+		return setTopicLikeCount(tx, post.TopicID, delta)
 	})
 	if err != nil {
 		return c.JSON(500, helpers.ErrorJSON("操作失败"))
@@ -72,5 +92,5 @@ func VotePost(c *echo.Context) error {
 			score += v.Vote
 		}
 	}
-	return c.JSON(200, map[string]any{"score": score, "my_vote": myVote})
+	return c.JSON(200, map[string]any{"score": score, "my_vote": myVote, "like_count": post.LikeCount + delta})
 }

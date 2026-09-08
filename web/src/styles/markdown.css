@@ -72,10 +72,11 @@ body {
   border-radius: 4px;
 }
 
-/* 代码块 */
+/* 代码块：浅色底，配合下方浅色 token 配色（GitHub Light 风格） */
 .markdown-content pre {
-  background: #1f2329;
-  color: #e6e8eb;
+  background: #f6f8fa;
+  color: #24292f;
+  border: 1px solid #e4e7ea;
   padding: 0.9em 1.1em;
   border-radius: 8px;
   overflow-x: auto;
@@ -142,8 +143,8 @@ body {
   scrollbar-color: rgba(120, 130, 140, 0.45) transparent;
 }
 .forum-thin-scroll::-webkit-scrollbar {
-  width: 5px;                                                /* 很细 */
-  height: 5px;
+  width: 8px;                                                /* 原 5px，加高约 50% */
+  height: 8px;
 }
 .forum-thin-scroll::-webkit-scrollbar-track {
   background: transparent;
