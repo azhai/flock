@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/azhai/gouache/models"
+	"github.com/azhai/flock/models"
 )
 
 // 覆盖 dto.go 中纯函数的所有分支（nil 早退 + trustLevel 全档位 + 组装循环）。

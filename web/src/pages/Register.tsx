@@ -79,7 +79,7 @@ export default function Register() {
               <Text color="white" fontWeight="bold" fontSize="xl">G</Text>
             </Box>
             <Heading size="lg" color={textPrimary} fontWeight="700" letterSpacing="-0.5px">
-              gouache
+              Flock
             </Heading>
           </Flex>
 

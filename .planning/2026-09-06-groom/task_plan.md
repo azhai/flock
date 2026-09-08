@@ -1,4 +1,4 @@
-# Task Plan: groom 论坛软件（核心闭环 MVP）
+# Task Plan: flock 论坛软件（核心闭环 MVP）
 
 ## Goal
 用 Go 实现一个可单二进制部署的论坛：用户注册/登录、嵌套分类、话题列表(排序/分页)、

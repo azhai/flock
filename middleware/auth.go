@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/azhai/gouache/config"
-	"github.com/azhai/gouache/models"
+	"github.com/azhai/flock/config"
+	"github.com/azhai/flock/models"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
 )

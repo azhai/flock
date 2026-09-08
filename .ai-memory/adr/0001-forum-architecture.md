@@ -1,4 +1,4 @@
-# ADR 0001: groom 核心架构与数据模型
+# ADR 0001: flock 核心架构与数据模型
 
 ## Status
 Accepted

@@ -74,7 +74,7 @@ export default function Login() {
               <Text color="white" fontWeight="bold" fontSize="xl">G</Text>
             </Box>
             <Heading size="lg" color={textPrimary} fontWeight="700" letterSpacing="-0.5px">
-              gouache
+              flock
             </Heading>
           </Flex>
 

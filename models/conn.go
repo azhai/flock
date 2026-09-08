@@ -37,5 +37,9 @@ func OpenDB(cfg drivers.DatabaseConfig) (*Database, error) {
 	if err = goent.AutoMigrate(db); err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
+	// 全文检索索引（FTS5 + 触发器，幂等）
+	if err = EnsureSearchIndex(db); err != nil {
+		return nil, fmt.Errorf("failed to build search index: %w", err)
+	}
 	return db, nil
 }

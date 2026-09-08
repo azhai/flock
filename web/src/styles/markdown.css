@@ -9,7 +9,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── 水粉画（gouache）背景：柔和的水彩晕染，保持简洁 ────── */
+/* ── 背景：柔和的水彩晕染，保持简洁 ────── */
 body {
   background:
     radial-gradient(1100px 520px at 10% -12%, rgba(255, 176, 150, 0.22), transparent 62%),

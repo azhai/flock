@@ -15,7 +15,7 @@ func TestLoadDefaults(t *testing.T) {
 	if c.Server.Port != 8090 || c.Server.Mode != "debug" {
 		t.Errorf("server default wrong: %+v", c.Server)
 	}
-	if c.Server.SiteTitle != "gouache" {
+	if c.Server.SiteTitle != "Flock" {
 		t.Errorf("site title default wrong: %q", c.Server.SiteTitle)
 	}
 	if c.Database.Type != "sqlite" {
@@ -27,7 +27,7 @@ func TestLoadDefaults(t *testing.T) {
 	if c.Admin.Username != "admin" || c.Admin.Email == "" {
 		t.Errorf("admin default wrong: %+v", c.Admin)
 	}
-	if c.Database.DSN != "gouache.db" {
+	if c.Database.DSN != "flock.db" {
 		t.Errorf("db dsn default wrong: %q", c.Database.DSN)
 	}
 }

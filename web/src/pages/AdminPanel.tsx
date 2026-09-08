@@ -25,6 +25,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { api } from '../lib/api';
+import Pagination from '../components/Pagination';
 
 const REPORT_STATUS_META: Record<string, { label: string; color: string }> = {
   pending: { label: '待处理', color: '#d97706' },
@@ -107,7 +108,11 @@ export default function AdminPanel() {
 
   // —— 话题 ——
   const [topics, setTopics] = useState<any[]>([]);
-  const loadTopics = () => api.listTopics({ sort: 'latest' }).then((d: any) => setTopics(d.data || [])).catch(() => {});
+  const [topicPage, setTopicPage] = useState(1);
+  const [topicTotal, setTopicTotal] = useState(0);
+  const topicPerPage = 20;
+  const loadTopics = (page = topicPage) =>
+    api.listTopics({ sort: 'latest', page }).then((d: any) => { setTopics(d.data || []); setTopicTotal(d.total || 0); }).catch(() => {});
   const topicAct = (t: any, fn: any, msg: string) => {
     fn(t.id).then(() => { loadTopics(); toast({ title: msg, status: 'success' }); })
       .catch(() => toast({ title: '操作失败', status: 'error' }));
@@ -121,10 +126,18 @@ export default function AdminPanel() {
   // —— 用户 ——
   const [users, setUsers] = useState<any[]>([]);
   const [uq, setUq] = useState('');
-  const loadUsers = () => api.listUsers(uq || undefined).then((d: any) => setUsers(d.data || [])).catch(() => {});
+  const [userPage, setUserPage] = useState(1);
+  const [userTotal, setUserTotal] = useState(0);
+  const userPerPage = 20;
+  const loadUsers = (page = userPage) =>
+    api.listUsers({ q: uq || undefined, page }).then((d: any) => { setUsers(d.data || []); setUserTotal(d.total || 0); }).catch(() => {});
+
+  // 话题/用户 Tab 切换或翻页/搜索时重新拉取
   useEffect(() => {
-    if (tabIdx === 4) loadUsers();
-  }, [uq, tabIdx]);
+    if (tabIdx === 3) loadTopics(topicPage);
+    if (tabIdx === 4) loadUsers(userPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicPage, userPage, uq, tabIdx]);
   const saveUser = (u: any, patch: any, msg: string) => {
     api.adminUpdateUser(u.username, patch).then(() => { loadUsers(); toast({ title: msg, status: 'success' }); })
       .catch(() => toast({ title: '保存失败', status: 'error' }));
@@ -248,6 +261,7 @@ export default function AdminPanel() {
                 </Flex>
               ))}
             </Stack>
+            <Pagination page={topicPage} perPage={topicPerPage} total={topicTotal} onChange={setTopicPage} />
           </TabPanel>
 
           {/* 用户 */}
@@ -284,6 +298,7 @@ export default function AdminPanel() {
                 </Flex>
               ))}
             </Stack>
+            <Pagination page={userPage} perPage={userPerPage} total={userTotal} onChange={setUserPage} />
           </TabPanel>
         </TabPanels>
       </Tabs>

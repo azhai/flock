@@ -24,7 +24,7 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FiMessageSquare, FiThumbsUp, FiLock, FiSend, FiMapPin, FiArrowLeft, FiBookmark, FiEdit2, FiTrash2, FiFlag, FiX, FiArrowUp, FiArrowDown, FiBell } from 'react-icons/fi';
+import { FiMessageSquare, FiLock, FiSend, FiMapPin, FiArrowLeft, FiBookmark, FiEdit2, FiTrash2, FiFlag, FiX, FiArrowUp, FiArrowDown, FiBell } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -86,15 +86,6 @@ export default function TopicDetail() {
         toast({ title: '回复成功', status: 'success' });
       })
       .catch(() => toast({ title: '回复失败', status: 'error' }));
-  };
-
-  const toggleLike = (p: any) => {
-    if (!user) return nav('/login', { state: { from: `/topics/${id}` } });
-    api.toggleLike(p.id)
-      .then((d: any) => {
-        setPosts(posts.map((x) => (x.id === p.id ? { ...x, liked: d.liked, like_count: d.like_count } : x)));
-      })
-      .catch(() => toast({ title: '操作失败', status: 'error' }));
   };
 
   const updatePostBody = (p: any, raw: string) => {
@@ -423,7 +414,6 @@ export default function TopicDetail() {
           user={user}
           isStaff={isStaff}
           canEdit={!!user && user.username === firstPost.user?.username}
-          toggleLike={toggleLike}
           updatePostBody={updatePostBody}
           deletePostBody={deletePostBody}
           onVote={votePost}
@@ -446,7 +436,6 @@ export default function TopicDetail() {
             user={user}
             isStaff={isStaff}
             canEdit={!!user && (isStaff || user.username === p.user?.username)}
-            toggleLike={toggleLike}
             updatePostBody={updatePostBody}
             deletePostBody={deletePostBody}
             onVote={votePost}
@@ -603,28 +592,38 @@ export default function TopicDetail() {
   );
 }
 
-function PostCard({ post, user, isOp, canEdit, toggleLike, updatePostBody, deletePostBody, onVote, onReport, borderColor, bgHover, textPrimary, textSecondary, textMuted, accent, isDark }: any) {
+function PostCard({ post, user, isOp, canEdit, updatePostBody, deletePostBody, onVote, onReport, borderColor, bgHover, textPrimary, textSecondary, textMuted, accent, isDark }: any) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(post.raw);
   const lv = LEVEL_META[post.user?.level] || { name: (post.user?.level_name || '新手'), color: textMuted, bg: 'transparent' };
 
   const actions = (
-    <Flex align="center" mt={2} flexWrap="wrap" gap={1}>
-      <Box display="inline-flex" align="center" border="1px" borderColor={borderColor} borderRadius="md" overflow="hidden">
-        <Button size="xs" variant="ghost" color={post.my_vote === 1 ? accent : textMuted} _hover={{ bg: bgHover }} onClick={() => onVote(post, 1)} py={1}>
+    <Flex align="center" mt={3} flexWrap="wrap" gap={1.5}>
+      {/* 顶/踩：评分居中，一套系统；再点取消当前票 */}
+      <HStack border="1px" borderColor={borderColor} borderRadius="md" spacing={0} overflow="hidden" bg={bgHover}>
+        <Button size="xs" variant="ghost" h={7} px={2} color={post.my_vote === 1 ? accent : textMuted} _hover={{ bg: accent + '14' }} onClick={() => onVote(post, 1)} aria-label="顶">
           <Icon as={FiArrowUp} boxSize={4} />
         </Button>
-        <Text fontSize="sm" fontWeight="700" px={2} color={post.score > 0 ? accent : post.score < 0 ? '#c53030' : textSecondary}>{post.score || 0}</Text>
-        <Button size="xs" variant="ghost" color={post.my_vote === -1 ? '#c53030' : textMuted} _hover={{ bg: bgHover }} onClick={() => onVote(post, -1)} py={1}>
+        <Text w="42px" textAlign="center" fontSize="sm" fontWeight="700" color={post.score > 0 ? accent : post.score < 0 ? '#c53030' : textSecondary}>
+          {post.score ?? 0}
+        </Text>
+        <Button size="xs" variant="ghost" h={7} px={2} color={post.my_vote === -1 ? '#c53030' : textMuted} _hover={{ bg: '#fed7d714' }} onClick={() => onVote(post, -1)} aria-label="踩">
           <Icon as={FiArrowDown} boxSize={4} />
         </Button>
-      </Box>
-      <Button size="xs" variant="ghost" color={post.liked ? accent : textMuted} _hover={{ bg: bgHover, color: textPrimary }} leftIcon={<Icon as={FiThumbsUp} boxSize={3} />} onClick={() => toggleLike(post)}>
-        {post.like_count > 0 ? post.like_count : '赞'}
-      </Button>
+      </HStack>
       {!canEdit && !isOp && (
         <Button size="xs" variant="ghost" color={textMuted} _hover={{ bg: bgHover, color: '#c53030' }} leftIcon={<Icon as={FiFlag} boxSize={3} />} onClick={() => onReport(post)}>
           举报
+        </Button>
+      )}
+      {canEdit && (
+        <Button size="xs" variant="ghost" color={textMuted} _hover={{ bg: bgHover, color: textPrimary }} leftIcon={<Icon as={FiEdit2} boxSize={3} />} onClick={() => { setEditing(true); setDraft(post.raw); }}>
+          编辑
+        </Button>
+      )}
+      {canEdit && (
+        <Button size="xs" variant="ghost" color="#c53030" _hover={{ bg: bgHover }} leftIcon={<Icon as={FiTrash2} boxSize={3} />} onClick={() => deletePostBody(post)}>
+          删除
         </Button>
       )}
     </Flex>
@@ -661,25 +660,13 @@ function PostCard({ post, user, isOp, canEdit, toggleLike, updatePostBody, delet
       <HStack spacing={3} mb={1} align="flex-start">
         <Avatar size="md" name={post.user?.username} bg={accent} flexShrink={0} mt={1} />
         <Box flex={1}>
-          <Flex justify="space-between" align="flex-start" mb={1}>
-            <HStack spacing={2} flexWrap="wrap">
-              <Text fontSize="sm" fontWeight="600" color={textPrimary}>{post.user?.username}</Text>
-              <Box fontSize="10px" fontWeight="700" color={lv.color} bg={lv.color + '14'} px={1.5} py={0.5} borderRadius="4px">{lv.name}</Box>
-              {post.user?.role === 'admin' && <Box fontSize="10px" fontWeight="700" color="#c53030" bg="#c5303014" px={1.5} py={0.5} borderRadius="4px">管理员</Box>}
-              <Text fontSize="xs" color={textMuted}>#{post.post_number}</Text>
-              <Text fontSize="xs" color={textMuted}>{formatDateTime(post.created_at)}</Text>
-            </HStack>
-            {canEdit && (
-              <HStack spacing={1}>
-                <Button size="xs" variant="ghost" color={textMuted} _hover={{ bg: bgHover, color: textPrimary }} onClick={() => { setEditing(true); setDraft(post.raw); }}>
-                  <Icon as={FiEdit2} boxSize={3} />
-                </Button>
-                <Button size="xs" variant="ghost" color="#c53030" _hover={{ bg: bgHover }} onClick={() => deletePostBody(post)}>
-                  <Icon as={FiTrash2} boxSize={3} />
-                </Button>
-              </HStack>
-            )}
-          </Flex>
+          <HStack spacing={2} flexWrap="wrap" mb={1}>
+            <Text fontSize="sm" fontWeight="600" color={textPrimary}>{post.user?.username}</Text>
+            <Box fontSize="10px" fontWeight="700" color={lv.color} bg={lv.color + '14'} px={1.5} py={0.5} borderRadius="4px">{lv.name}</Box>
+            {post.user?.role === 'admin' && <Box fontSize="10px" fontWeight="700" color="#c53030" bg="#c5303014" px={1.5} py={0.5} borderRadius="4px">管理员</Box>}
+            <Text fontSize="xs" color={textMuted}>#{post.post_number}</Text>
+            <Text fontSize="xs" color={textMuted}>{formatDateTime(post.created_at)}</Text>
+          </HStack>
           {editing ? (
             <Box>
               <Box data-color-mode={isDark ? 'dark' : 'light'} mb={2}>

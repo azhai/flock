@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/azhai/gouache/models"
+	"github.com/azhai/flock/models"
 )
 
 func TestTrustLevel(t *testing.T) {

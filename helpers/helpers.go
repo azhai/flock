@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/azhai/gouache/config"
+	"github.com/azhai/flock/config"
 	"github.com/labstack/echo/v5"
 )
 

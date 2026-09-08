@@ -1,7 +1,7 @@
 # ── Project config ────────────────────────────────────────
 
 # main binary name (built from ./)
-APP       = gouache
+APP       = flock
 # frontend directory
 ADMIN_DIR = web
 # auto-discover cmd/ subdirs
@@ -75,8 +75,8 @@ clean:
 
 ## test: 运行 Go 测试（verbose + race + 覆盖率聚合），可 TAGS=... 透传
 test:
-	go test -race -coverpkg=./... ./... -coverprofile=/tmp/gouache.cover $(TAGS)
-	@go tool cover -func=/tmp/gouache.cover | tail -1
+	go test -race -coverpkg=./... ./... -coverprofile=/tmp/flock.cover $(TAGS)
+	@go tool cover -func=/tmp/flock.cover | tail -1
 
 ## test-watch: 热重载测试 —— 编辑任意 .go 文件后自动重跑并输出覆盖率
 test-watch:
@@ -85,7 +85,7 @@ test-watch:
 
 ## cover: 生成覆盖率报告并在浏览器打开
 cover:
-	@go test -coverpkg=./... ./... -coverprofile=/tmp/gouache.cover > /dev/null && go tool cover -html=/tmp/gouache.cover
+	@go test -coverpkg=./... ./... -coverprofile=/tmp/flock.cover > /dev/null && go tool cover -html=/tmp/flock.cover
 
 ## lint: run golangci-lint on entire project
 lint:

@@ -14,17 +14,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/azhai/flock/config"
+	"github.com/azhai/flock/middleware"
+	"github.com/azhai/flock/models"
 	"github.com/azhai/gobus/environ"
-	"github.com/azhai/gouache/config"
-	"github.com/azhai/gouache/middleware"
-	"github.com/azhai/gouache/models"
 	"github.com/labstack/echo/v5"
 )
 
 var testApp *echo.Echo
 
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "gouache-test-*")
+	dir, err := os.MkdirTemp("", "flock-test-*")
 	if err != nil {
 		fmt.Println("mkdirtemp:", err)
 		os.Exit(1)
@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	os.Setenv("TOKEN_EXPIRY", "72")
 	os.Setenv("ADMIN_USERNAME", "admin")
 	os.Setenv("ADMIN_PASSWORD", "adminpass")
-	os.Setenv("ADMIN_EMAIL", "admin@gouache.local")
+	os.Setenv("ADMIN_EMAIL", "admin@flock.local")
 
 	cfg := config.Load(environ.NewEmptyEnviron())
 	if _, err := models.OpenDB(cfg.Database); err != nil {
@@ -137,7 +137,7 @@ func TestFullIntegration(t *testing.T) {
 	var carolTok, malloryTok, mikeTok string
 	t.Run("auth", func(t *testing.T) {
 		code, b := do(t, http.MethodPost, "/api/v1/auth/register", "", map[string]any{
-			"username": "carol", "email": "carol@gouache.local", "password": "secret1"})
+			"username": "carol", "email": "carol@flock.local", "password": "secret1"})
 		if code != 201 {
 			t.Fatalf("register carol: %d %s", code, b)
 		}
@@ -146,17 +146,17 @@ func TestFullIntegration(t *testing.T) {
 
 		// 重复用户名
 		if code, _ := do(t, http.MethodPost, "/api/v1/auth/register", "", map[string]any{
-			"username": "carol", "email": "carol2@gouache.local", "password": "secret1"}); code != 409 {
+			"username": "carol", "email": "carol2@flock.local", "password": "secret1"}); code != 409 {
 			t.Fatalf("dup username: %d", code)
 		}
 		// 邮箱已被注册（用 alice 邮箱）
 		if code, _ := do(t, http.MethodPost, "/api/v1/auth/register", "", map[string]any{
-			"username": "xx1", "email": "alice@gouache.local", "password": "secret1"}); code != 409 {
+			"username": "xx1", "email": "alice@flock.local", "password": "secret1"}); code != 409 {
 			t.Fatalf("dup email: %d", code)
 		}
 		// 用户名过短
 		if code, _ := do(t, http.MethodPost, "/api/v1/auth/register", "", map[string]any{
-			"username": "ab", "email": "ab@gouache.local", "password": "secret1"}); code != 400 {
+			"username": "ab", "email": "ab@flock.local", "password": "secret1"}); code != 400 {
 			t.Fatalf("short username: %d", code)
 		}
 		// 邮箱非法
@@ -166,7 +166,7 @@ func TestFullIntegration(t *testing.T) {
 		}
 		// 密码过短
 		if code, _ := do(t, http.MethodPost, "/api/v1/auth/register", "", map[string]any{
-			"username": "abc", "email": "abc@gouache.local", "password": "123"}); code != 400 {
+			"username": "abc", "email": "abc@flock.local", "password": "123"}); code != 400 {
 			t.Fatalf("short pwd: %d", code)
 		}
 		// 非法 body
@@ -199,7 +199,7 @@ func TestFullIntegration(t *testing.T) {
 	t.Run("register-more", func(t *testing.T) {
 		for _, u := range []struct {
 			user, email string
-		}{{"mallory", "mallory@gouache.local"}, {"mike", "mike@gouache.local"}} {
+		}{{"mallory", "mallory@flock.local"}, {"mike", "mike@flock.local"}} {
 			code, b := do(t, http.MethodPost, "/api/v1/auth/register", "", map[string]any{
 				"username": u.user, "email": u.email, "password": "secret1"})
 			if code != 201 {
@@ -887,7 +887,7 @@ func TestFullIntegration(t *testing.T) {
 	t.Run("spa", func(t *testing.T) {
 		if code, b := rawDo(t, http.MethodGet, "/", "", "", nil); code != 200 {
 			t.Fatalf("SPA index: %d", code)
-		} else if !strings.Contains(string(b), "gouache") {
+		} else if !strings.Contains(strings.ToLower(string(b)), "flock") {
 			t.Fatalf("index.html missing brand: %s", b)
 		}
 		if code, _ := rawDo(t, http.MethodGet, "/api/nope", "", "", nil); code != 404 {
@@ -904,7 +904,7 @@ func TestFullIntegration(t *testing.T) {
 func TestMeGhostAndFollow(t *testing.T) {
 	// 幽灵用户：claims 存在但数据库无此用户 → GetCurrentUser 返回 nil → /auth/me 401
 	ghost, err := middleware.GenerateToken(&models.User{
-		ID: 999999, Username: "ghost", Email: "ghost@gouache.local", Role: models.RoleUser})
+		ID: 999999, Username: "ghost", Email: "ghost@flock.local", Role: models.RoleUser})
 	if err != nil {
 		t.Fatalf("ghost token: %v", err)
 	}

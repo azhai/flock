@@ -22,7 +22,9 @@ go.work
 optimized-rules.txt
 
 # Database
+*.csv
 *.db
+*.db-journal
 *.sqlite
 
 # Environment variables

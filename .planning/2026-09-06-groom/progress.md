@@ -1,9 +1,9 @@
-# Progress Log — groom
+# Progress Log — flock
 
 ## 2026-09-06
 - 调研：goent README(gitfolio models/handlers/middleware/helpers/config) → 已记录 findings.md
 - 调研：echo/v5 版本确认 v5.3.1；环境 go1.27.1 + goproxy.cn
-- 创建 `.planning/2026-09-06-groom/` 三文件 + `.ai-memory/adr/`
+- 创建 `.planning/2026-09-06-flock/` 三文件 + `.ai-memory/adr/`
 - **阶段 3**：go module init + echo/v5 API 签名确认（Context 结构体、GET/POST 签名、MiddlewareFunc、Group 中间件链）
 - **阶段 4**：models 实体 User/Category/Topic/Post/PostLike + ForumSchema + AutoMigrate
   - 注意：goent `default:current_timestamp` 仅对 string 字段生效；CreatedAt/UpdatedAt 由应用层 time.Now() 填入

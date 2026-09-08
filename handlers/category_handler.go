@@ -3,9 +3,9 @@ package handlers
 import (
 	"strings"
 
+	"github.com/azhai/flock/helpers"
+	"github.com/azhai/flock/models"
 	"github.com/azhai/goent"
-	"github.com/azhai/gouache/helpers"
-	"github.com/azhai/gouache/models"
 	"github.com/labstack/echo/v5"
 )
 
@@ -117,9 +117,11 @@ func UpdateCategory(c *echo.Context) error {
 	if req.Position != nil {
 		cat.Position = *req.Position
 	}
-	cat.ParentID = req.ParentID
-	if req.ParentID != nil && *req.ParentID == cat.ID {
-		return c.JSON(400, helpers.ErrorJSON("分类不能作为自身的父分类"))
+	if req.ParentID != nil {
+		if *req.ParentID == cat.ID {
+			return c.JSON(400, helpers.ErrorJSON("分类不能作为自身的父分类"))
+		}
+		cat.ParentID = req.ParentID
 	}
 	cat.UpdatedAt = timeNow()
 

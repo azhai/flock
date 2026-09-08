@@ -45,10 +45,10 @@ func Load(env *environ.Environ) *Config {
 			Mode:            env.GetStr("APP_MODE", "debug"),
 			Port:            env.GetInt("SERVER_PORT", 8090),
 			BaseURL:         env.GetStr("BASE_URL", "http://127.0.0.1:8090"),
-			SiteTitle:       env.GetStr("SITE_TITLE", "gouache"),
+			SiteTitle:       env.GetStr("SITE_TITLE", "Flock"),
 			SiteDescription: env.GetStr("SITE_DESCRIPTION", "一个极简论坛"),
 		},
-		Database: drivers.LoadConfig(env, "gouache.db"),
+		Database: drivers.LoadConfig(env, "flock.db"),
 		Auth: AuthConfig{
 			JWTSecret:   env.GetStr("JWT_SECRET", "change-me-in-production"),
 			TokenExpiry: env.GetInt("TOKEN_EXPIRY", 72),
@@ -56,7 +56,7 @@ func Load(env *environ.Environ) *Config {
 		Admin: AdminConfig{
 			Username: env.GetStr("ADMIN_USERNAME", "admin"),
 			Password: env.GetStr("ADMIN_PASSWORD", ""),
-			Email:    env.GetStr("ADMIN_EMAIL", "admin@groom.local"),
+			Email:    env.GetStr("ADMIN_EMAIL", "admin@flock.local"),
 		},
 	}
 	return cfg

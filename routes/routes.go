@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"github.com/azhai/gouache/config"
-	"github.com/azhai/gouache/handlers"
-	"github.com/azhai/gouache/middleware"
+	"github.com/azhai/flock/config"
+	"github.com/azhai/flock/handlers"
+	"github.com/azhai/flock/middleware"
 	"github.com/labstack/echo/v5"
 )
 

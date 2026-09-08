@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/azhai/flock/config"
+	"github.com/azhai/flock/helpers"
+	"github.com/azhai/flock/models"
+	"github.com/azhai/flock/routes"
 	"github.com/azhai/gobus/environ"
 	"github.com/azhai/goent"
 	"github.com/azhai/goent/model"
-	"github.com/azhai/gouache/config"
-	"github.com/azhai/gouache/helpers"
-	"github.com/azhai/gouache/models"
-	"github.com/azhai/gouache/routes"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 )
@@ -158,12 +158,12 @@ func seedDemo() {
 		}
 		return u
 	}
-	alice := getUser("alice", "alice@gouache.local")
+	alice := getUser("alice", "alice@flock.local")
 	authorID := int64(1)
 	if alice != nil {
 		authorID = alice.ID
 	}
-	bob := getUser("bob", "bob@gouache.local")
+	bob := getUser("bob", "bob@flock.local")
 	readerID := authorID
 	if bob != nil {
 		readerID = bob.ID
@@ -194,7 +194,7 @@ func seedDemo() {
 			title: "水粉画风格的配色怎么选才简洁",
 			cat:   "general",
 			tags:  []string{"设计", "配色"},
-			body:  "想给论坛加点水粉画（gouache）的柔和质感，但又不能太花。\n\n## 思路\n\n水粉画的精髓是“柔和而沉稳”，颜色饱和度低、有纸张的质感。\n\n第一步先把背景做成淡淡的纸色，再在角落加一点晕染。\n\n## 总结\n\n少即是多，留白和质感比鲜艳更重要。",
+			body:  "想给论坛加点水粉画（flock）的柔和质感，但又不能太花。\n\n## 思路\n\n水粉画的精髓是“柔和而沉稳”，颜色饱和度低、有纸张的质感。\n\n第一步先把背景做成淡淡的纸色，再在角落加一点晕染。\n\n## 总结\n\n少即是多，留白和质感比鲜艳更重要。",
 			reply: "",
 		},
 		{

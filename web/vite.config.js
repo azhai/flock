@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      // 静态打成多个 vendor chunk，使 gzip 尽量不超 100K。
+      // 静态打成多个 vendor chunk，使每个 gzip 后 ≤100K，总数 ≤10。
       // 注意：绝不静态匹配 refractor（会让 Rollup 生成非法初始化顺序 → TDZ），
       // 它由 highlightProvider 动态 import，单独成为异步 chunk。
       rollupOptions: {
@@ -36,13 +36,20 @@ export default defineConfig(({ mode }) => {
             // 语法高亮：仅动态引用 → 独立异步块
             if (id.includes('/src/lib/highlightBundle.js') || id.includes('/refractor/'))
               return 'highlight';
-            // react + UI 同一块：react 一旦与 chakra 拆开，二者形成 chunk 级循环，
-            // chakra 在 React 就绪前被求值（useLayoutEffect undefined）。故合并。
-            if (id.includes('react-dom') || id.includes('react/') || id.includes('/scheduler/')
-              || /@chakra-ui|@emotion|framer-motion|react-icons|csstype|@dnd-kit|date-fns|@popperjs|tinycolor|memoize|@babel\/runtime|@ctrl\/tinycolor/.test(id))
-              return 'ui';
-            // 其余（含整个 md 生态 / unified / parse5 / md-editor）交给 Rollup 默认
-            // 自然分组：单块内能对真实 ESM 循环正确排序，避免手工拆块造成的 TDZ。
+            // React 运行时（含 router / zustand 状态）
+            if (/node_modules\/(react|react-dom|scheduler|zustand|react-router|react-router-dom|@remix-run)\//.test(id))
+              return 'react-core';
+            // Chakra UI / emotion / motion：CSS-in-JS 体系，与 react-core 分离已验证无循环 chunk
+            if (id.includes('@chakra-ui')) return 'chakra';
+            if (id.includes('/@emotion/') || id.includes('/framer-motion/') || id.includes('/csstype/'))
+              return 'emotion';
+            if (id.includes('/react-icons/')) return 'icons';
+            // Markdown 编辑器（nohighlight 子路径，不含 prism）
+            if (id.includes('/@uiw/')) return 'md-editor';
+            // Markdown 渲染/解析生态（含 unified / micromark / parse5 / hast 等）
+            if (/node_modules\/(react-markdown|remark-|rehype-|unified|micromark|mdast-|unist-|hast-|estree-|parse5|vfile|bail|trough)\//.test(id))
+              return 'md-render';
+            // 其余（含应用代码）交给 Rollup 默认分组
             return undefined;
           },
         },

@@ -77,7 +77,12 @@ export const api = {
     req('GET', `/users/${username}/posts${page ? '?page=' + page : ''}`),
 
   // admin
-  listUsers: (q) => req('GET', `/admin/users${q ? '?q=' + q : ''}`),
+  listUsers: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.q) q.set('q', params.q);
+    if (params.page) q.set('page', params.page);
+    return req('GET', `/admin/users?${q.toString()}`);
+  },
   adminUpdateUser: (username, r) => req('PUT', `/admin/users/${username}`, r),
   listReports: (status) => req('GET', `/reports${status ? '?status=' + status : ''}`),
   resolveReport: (id) => req('POST', `/reports/${id}/resolve`),

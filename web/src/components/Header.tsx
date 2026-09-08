@@ -1,4 +1,5 @@
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import {
   Avatar,
   Badge,
@@ -35,6 +36,13 @@ export default function Header() {
   const { unread, notifs, markRead, markAll } = useNotifications(!!user);
   const nav = useNavigate();
   const [isMobile] = useMediaQuery('(max-width: 768px)');
+  const [q, setQ] = useState('');
+
+  // 回车跳转到首页搜索（?q=），路由由后端 FTS5 全文检索处理
+  const submitSearch = () => {
+    const kw = q.trim();
+    nav(kw ? `/?q=${encodeURIComponent(kw)}` : '/');
+  };
 
   // OpenAI Community 风格配色
   const headerBg = useColorModeValue('rgba(244, 245, 247, 0.9)', 'rgba(26, 29, 35, 0.85)');
@@ -71,7 +79,7 @@ export default function Header() {
           letterSpacing="-0.3px"
           fontSize="18px"
         >
-          gouache
+          Flock
         </Heading>
 
         <Spacer />
@@ -100,8 +108,12 @@ export default function Header() {
               borderColor="transparent"
               fontSize="sm"
               color={textPrimary}
+              value={q}
+              onChange={(e: any) => setQ(e.target.value)}
+              onKeyDown={(e: any) => e.key === 'Enter' && submitSearch()}
               _focus={{ borderColor: accent, outline: 'none' }}
               _placeholder={{ color: textSecondary }}
+              aria-label="搜索"
               w={isMobile ? '100px' : '180px'}
             />
           </Box>

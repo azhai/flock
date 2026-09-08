@@ -20,6 +20,7 @@ import {
 import { FiMessageSquare, FiMapPin, FiPlus } from 'react-icons/fi';
 import { api } from '../lib/api';
 import Sidebar from '../components/Sidebar';
+import Pagination from '../components/Pagination';
 
 const SORTS = [
   { key: 'latest', label: '最新' },
@@ -41,6 +42,7 @@ export default function Home() {
 
   const catSlug = searchParams.get('cat');
   const tag = searchParams.get('tag');
+  const q = (searchParams.get('q') || '').trim();
   const catId = cats.find((c: any) => c.slug === catSlug)?.id ?? null;
 
   const bg = useColorModeValue('#ffffff', '#1a1d23');
@@ -57,14 +59,19 @@ export default function Home() {
 
   useEffect(() => {
     setLoading(true);
-    api.listTopics({ category_id: catId, tag, sort, page })
+    api.listTopics({ category_id: catId, tag, q: q || undefined, sort, page })
       .then((d: any) => {
         setTopics(d.data || []);
         setTotal(d.total || 0);
       })
       .catch(() => toast({ title: '加载话题失败', status: 'error' }))
       .finally(() => setLoading(false));
-  }, [catId, tag, sort, page]);
+  }, [catId, tag, q, sort, page]);
+
+  // 搜索词 / 分类 / 标签变化时回到第一页
+  useEffect(() => {
+    setPage(1);
+  }, [q, catSlug, tag]);
 
   const handleSortChange = (newSort: string) => {
     setSort(newSort);
@@ -91,7 +98,9 @@ export default function Home() {
       <GridItem bg="transparent">
         <Box px={{ base: 4, md: 6 }} py={4}>
           <Heading size="md" color={textPrimary} fontWeight="700" mb={1}>
-            {(cats.find((c: any) => c.slug === catSlug)?.name) || (tag ? `#${tag}` : '最新话题')}
+            {q
+              ? `搜索“${q}”`
+              : (cats.find((c: any) => c.slug === catSlug)?.name) || (tag ? `#${tag}` : '最新话题')}
           </Heading>
           <Text fontSize="sm" color={textMuted} mb={4}>
             {total} 个话题 · {cats.length} 个分类
@@ -203,15 +212,7 @@ export default function Home() {
           )}
 
           {total > perPage && (
-            <Flex gap={2} mt={5} justify="center">
-              <Button isDisabled={page === 1} onClick={() => setPage((p) => p - 1)} variant="outline" size="sm" rounded="md">
-                上一页
-              </Button>
-              <Text alignSelf="center" fontSize="sm" color={textSecondary}>第 {page} 页</Text>
-              <Button isDisabled={page * perPage >= total} onClick={() => setPage((p) => p + 1)} variant="outline" size="sm" rounded="md">
-                下一页
-              </Button>
-            </Flex>
+            <Pagination page={page} perPage={perPage} total={total} onChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
           )}
         </Box>
       </GridItem>

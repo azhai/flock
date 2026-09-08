@@ -20,10 +20,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/azhai/flock/config"
+	"github.com/azhai/flock/middleware"
+	"github.com/azhai/flock/models"
 	"github.com/azhai/goent/model"
-	"github.com/azhai/gouache/config"
-	"github.com/azhai/gouache/middleware"
-	"github.com/azhai/gouache/models"
 )
 
 // ---- helpers ----
@@ -47,7 +47,7 @@ func covRegister(t *testing.T, username, email string) string {
 func covGhostToken(t *testing.T) string {
 	t.Helper()
 	tok, err := middleware.GenerateToken(&models.User{
-		ID: 987654, Username: "ghost_user", Email: "ghost@gouache.local", Role: models.RoleUser})
+		ID: 987654, Username: "ghost_user", Email: "ghost@flock.local", Role: models.RoleUser})
 	if err != nil {
 		t.Fatalf("ghost token: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestCovRunAndSeeds(t *testing.T) {
 func TestCovStaticFiles(t *testing.T) {
 	// /assets 是 web/dist 中的目录 → dist.Open 成功但 IsDir → close 后回退 index.html
 	code, b := rawDo(t, http.MethodGet, "/assets", "", "", nil)
-	if code != 200 || !strings.Contains(string(b), "gouache") && !strings.Contains(string(b), "groom") {
+	if code != 200 || !strings.Contains(strings.ToLower(string(b)), "flock") {
 		t.Fatalf("dir static: %d %s", code, b)
 	}
 	// /no-such-path 不存在 → SPA fallback index.html
@@ -151,7 +151,7 @@ func TestCovStaticFiles(t *testing.T) {
 func TestCovAuthExtra(t *testing.T) {
 	longPw := strings.Repeat("a", 100) // >72 bytes → bcrypt ErrPasswordTooLong
 	if code, _ := do(t, http.MethodPost, "/api/v1/auth/register", "", map[string]any{
-		"username": "covlongpw", "email": "covlongpw@gouache.local", "password": longPw}); code != 500 {
+		"username": "covlongpw", "email": "covlongpw@flock.local", "password": longPw}); code != 500 {
 		t.Fatalf("register long-pw should be 500, got %d", code)
 	}
 	// 确认未创建该用户（失败分支未入库）
@@ -171,7 +171,7 @@ func TestCovUpdateProfileBranches(t *testing.T) {
 	}
 
 	// 非法 body → 400
-	tok := covRegister(t, "covprof_a", "covprof_a@gouache.local")
+	tok := covRegister(t, "covprof_a", "covprof_a@flock.local")
 	if code, _ := rawDo(t, http.MethodPut, "/api/v1/user/me", tok, "application/json", strings.NewReader("{bad")); code != 400 {
 		t.Fatalf("bad body update profile: %d", code)
 	}
@@ -181,7 +181,7 @@ func TestCovUpdateProfileBranches(t *testing.T) {
 
 func TestCovBookmarkBranches(t *testing.T) {
 	ghost := covGhostToken(t)
-	tok := covRegister(t, "covbm_a", "covbm_a@gouache.local")
+	tok := covRegister(t, "covbm_a", "covbm_a@flock.local")
 
 	// ToggleBookmark 幽灵 → 401
 	if code, _ := do(t, http.MethodPost, "/api/v1/topics/1/bookmark", ghost, nil); code != 401 {
@@ -201,7 +201,7 @@ func TestCovBookmarkBranches(t *testing.T) {
 
 func TestCovVoteBranches(t *testing.T) {
 	ghost := covGhostToken(t)
-	tok := covRegister(t, "covvote_a", "covvote_a@gouache.local")
+	tok := covRegister(t, "covvote_a", "covvote_a@flock.local")
 	topicID := covCreateTopic(t, tok, "分数测试", "投票覆盖", nil)
 	postID := covFirstPostID(t, topicID)
 	base := fmt.Sprintf("/api/v1/posts/%d/vote", postID)
@@ -259,7 +259,7 @@ func TestCovCategoryBranches(t *testing.T) {
 
 func TestCovAdminBranches(t *testing.T) {
 	adminTok := authToken(t, "admin")
-	covRegister(t, "covadm_a", "covadm_a@gouache.local")
+	covRegister(t, "covadm_a", "covadm_a@flock.local")
 
 	// 非法 body → 400（AdminUpdateUser Bind 失败）
 	if code, _ := rawDo(t, http.MethodPut, "/api/v1/admin/users/covadm_a", adminTok, "application/json", strings.NewReader("{bad")); code != 400 {
@@ -276,7 +276,7 @@ func TestCovAdminBranches(t *testing.T) {
 
 func TestCovReportBranch(t *testing.T) {
 	ghost := covGhostToken(t)
-	tok := covRegister(t, "covrep_a", "covrep_a@gouache.local")
+	tok := covRegister(t, "covrep_a", "covrep_a@flock.local")
 	topicID := covCreateTopic(t, tok, "举报覆盖", "举报", nil)
 	postID := covFirstPostID(t, topicID)
 	base := fmt.Sprintf("/api/v1/posts/%d/report", postID)
@@ -297,7 +297,7 @@ func TestCovReportBranch(t *testing.T) {
 // 校验分支、UpdateTopic category、loadFollowed/loadBookmarks 空与非空等。
 func TestCovTopicBranches(t *testing.T) {
 	ghost := covGhostToken(t)
-	tok := covRegister(t, "covtop_a", "covtop_a@gouache.local")
+	tok := covRegister(t, "covtop_a", "covtop_a@flock.local")
 
 	// CreateTopic 幽灵 → 401
 	if code, _ := do(t, http.MethodPost, "/api/v1/topics", ghost, map[string]any{"title": "x", "raw": "y"}); code != 401 {
@@ -366,7 +366,7 @@ func TestCovTopicBranches(t *testing.T) {
 // 触发 ListTopics 的 tag 命中但 ids 空 → 提前返回空列表，同时带登录态触发 loadFollowed/
 // loadBookmarks 的空 ids 分支。
 func TestCovListTopicsEmptyTags(t *testing.T) {
-	tok := covRegister(t, "covtag_a", "covtag_a@gouache.local")
+	tok := covRegister(t, "covtag_a", "covtag_a@flock.local")
 	id := covCreateTopic(t, tok, "唯一定制话题", "自定义标签", []string{"covuniq1"})
 	// 作者删除该话题 → TopicTag 删除，但 Tag 记录保留、topics_count=0
 	if code, _ := do(t, http.MethodDelete, fmt.Sprintf("/api/v1/topics/%d", id), tok, nil); code != 200 {
@@ -390,8 +390,8 @@ func TestCovListTopicsEmptyTags(t *testing.T) {
 // ListPosts 的 500（关闭 DB）。也覆盖 CreatePost 幽灵 401 / UpdatePost bind / DeletePost 他人 403。
 func TestCovListPostsLiked(t *testing.T) {
 	ghost := covGhostToken(t)
-	ak := covRegister(t, "covlk_a", "covlk_a@gouache.local")
-	bk := covRegister(t, "covlk_b", "covlk_b@gouache.local")
+	ak := covRegister(t, "covlk_a", "covlk_a@flock.local")
+	bk := covRegister(t, "covlk_b", "covlk_b@flock.local")
 	topicID := covCreateTopic(t, ak, "点赞列表覆盖", "正文", nil)
 	var postID int64
 	{
@@ -432,9 +432,9 @@ func TestCovListPostsLiked(t *testing.T) {
 // createReplyNotifications 的关注者分支 + createMentionNotifications 去重分支。
 func TestCovNotificationsExtra(t *testing.T) {
 	ghost := covGhostToken(t)
-	author := covRegister(t, "covnt_a", "covnt_a@gouache.local")
-	follower := covRegister(t, "covnt_b", "covnt_b@gouache.local")
-	replier := covRegister(t, "covnt_c", "covnt_c@gouache.local")
+	author := covRegister(t, "covnt_a", "covnt_a@flock.local")
+	follower := covRegister(t, "covnt_b", "covnt_b@flock.local")
+	replier := covRegister(t, "covnt_c", "covnt_c@flock.local")
 
 	topicID := covCreateTopic(t, author, "通知覆盖", "正文", nil)
 
@@ -517,7 +517,7 @@ func loadPostIDs(t *testing.T, topicID int64) []int64 {
 // staff 对 pin/unpin/close/open 的 200 分支。
 func TestCovSetTopicFlag(t *testing.T) {
 	admin := authToken(t, "admin")
-	reg := covRegister(t, "covflag_a", "covflag_a@gouache.local")
+	reg := covRegister(t, "covflag_a", "covflag_a@flock.local")
 	id := covCreateTopic(t, reg, "置顶覆盖", "flag", nil)
 
 	// 非 staff → 403
@@ -540,8 +540,8 @@ func TestCovSetTopicFlag(t *testing.T) {
 // TestCovDeleteTopicRich 让一个话题带关注/收藏/多帖/点赞/投票/举报后删除，
 // 覆盖 DeleteTopic 的级联删除各分支、非作者 403、staff 直接删除。
 func TestCovDeleteTopicRich(t *testing.T) {
-	ak := covRegister(t, "covdel_a", "covdel_a@gouache.local")
-	bk := covRegister(t, "covdel_b", "covdel_b@gouache.local")
+	ak := covRegister(t, "covdel_a", "covdel_a@flock.local")
+	bk := covRegister(t, "covdel_b", "covdel_b@flock.local")
 	id := covCreateTopic(t, ak, "级联删除覆盖", "rich", []string{"covdel"})
 
 	reply := func(who string) {
@@ -586,7 +586,7 @@ func TestCovDeleteTopicRich(t *testing.T) {
 
 // TestCovUnlike 覆盖 ToggleLike 的取消点赞（delete）分支与再次点赞（通知）。
 func TestCovUnlike(t *testing.T) {
-	ak := covRegister(t, "covlike_a", "covlike_a@gouache.local")
+	ak := covRegister(t, "covlike_a", "covlike_a@flock.local")
 	id := covCreateTopic(t, ak, "取消点赞覆盖", "x", nil)
 	pid := covFirstPostID(t, id)
 	base := fmt.Sprintf("/api/v1/posts/%d/like", pid)
@@ -611,7 +611,7 @@ func TestCovUnlike(t *testing.T) {
 
 // TestCovBookmarkData 覆盖 ToggleBookmark 的加/删分支与 ListBookmarks 有数据分支。
 func TestCovBookmarkData(t *testing.T) {
-	ak := covRegister(t, "covbk_a", "covbk_a@gouache.local")
+	ak := covRegister(t, "covbk_a", "covbk_a@flock.local")
 	id := covCreateTopic(t, ak, "收藏数据覆盖", "bm", nil)
 	bmURL := fmt.Sprintf("/api/v1/topics/%d/bookmark", id)
 
@@ -642,7 +642,7 @@ func TestCovBookmarkData(t *testing.T) {
 
 // TestCovVoteRemove 覆盖 VotePost 的撤销（同值再点 / 投 0）分支与非法值 400。
 func TestCovVoteRemove(t *testing.T) {
-	ak := covRegister(t, "covvr_a", "covvr_a@gouache.local")
+	ak := covRegister(t, "covvr_a", "covvr_a@flock.local")
 	id := covCreateTopic(t, ak, "撤销投票覆盖", "x", nil)
 	pid := covFirstPostID(t, id)
 	base := fmt.Sprintf("/api/v1/posts/%d/vote", pid)
@@ -669,7 +669,7 @@ func TestCovVoteRemove(t *testing.T) {
 // TestCovReportResolve 覆盖 CreateReport 重复举报更新、ResolveReport 删除违规帖、
 // DismissReport 同状态提前返回、非法/缺失 id 分支。
 func TestCovReportResolve(t *testing.T) {
-	ak := covRegister(t, "covrr_a", "covrr_a@gouache.local")
+	ak := covRegister(t, "covrr_a", "covrr_a@flock.local")
 	admin := authToken(t, "admin")
 	id := covCreateTopic(t, ak, "举报处理覆盖", "x", nil)
 	if code, _ := do(t, http.MethodPost, fmt.Sprintf("/api/v1/topics/%d/posts", id), ak, map[string]any{"raw": "second"}); code != 201 {
@@ -724,8 +724,8 @@ func TestCovReportResolve(t *testing.T) {
 
 // TestCovUpdateDeletePost 覆盖 UpdatePost 成功/空内容400/非法id404，DeletePost 成功/首帖400/非法id404。
 func TestCovUpdateDeletePost(t *testing.T) {
-	ak := covRegister(t, "covud_a", "covud_a@gouache.local")
-	_ = covRegister(t, "covud_b", "covud_b@gouache.local")
+	ak := covRegister(t, "covud_a", "covud_a@flock.local")
+	_ = covRegister(t, "covud_b", "covud_b@flock.local")
 	id := covCreateTopic(t, ak, "编辑删除帖子覆盖", "x", nil)
 	pid1 := covFirstPostID(t, id)
 
@@ -789,8 +789,8 @@ func TestCovParseTokenBranches(t *testing.T) {
 
 // TestCovTrustLevelBranches 通过直接入库大量帖子，触发 trustLevel 的 intermediate/资深分支。
 func TestCovTrustLevelBranches(t *testing.T) {
-	mid := covRegister(t, "covmid_a", "covmid_a@gouache.local")
-	sen := covRegister(t, "covsen_a", "covsen_a@gouache.local")
+	mid := covRegister(t, "covmid_a", "covmid_a@flock.local")
+	sen := covRegister(t, "covsen_a", "covsen_a@flock.local")
 	midTopic := covCreateTopic(t, mid, "中级覆盖", "x", nil)
 	senTopic := covCreateTopic(t, sen, "资深覆盖", "y", nil)
 	midUser, _ := models.GetDB().User.Select().Where("username = ?", "covmid_a").One()
@@ -874,7 +874,7 @@ func TestCovCategoryTreeBranches(t *testing.T) {
 // TestCovStreamTicker 等待超过 SSE 轮询周期（15s），触发 ticker 分支的 ": ping" 心跳，
 // 覆盖 StreamNotifications 的时间轮询路径（现有用例只覆盖初始发送 + 取消）。
 func TestCovStreamTicker(t *testing.T) {
-	tok := covRegister(t, "covstr_a", "covstr_a@gouache.local")
+	tok := covRegister(t, "covstr_a", "covstr_a@flock.local")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/notifications/stream", nil).WithContext(ctx)

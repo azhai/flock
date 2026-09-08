@@ -1,4 +1,4 @@
-# Findings — groom 调研记录
+# Findings — flock 调研记录
 
 ## 2026-09-06 — goent ORM API
 - **实体定义**：struct + `goe` tag：`pk`/`unique`/`index`/`default:...`/`column:...`/`m2o`
@@ -23,7 +23,7 @@
 - **DTO**：每实体 `XxxResponse` + `ToXxxResponse(model)` 手动转换（避免直接序列化 ORM 实体）。
 - **helpers**：`GetPagination`、`Response{Data,Page,PerPage,Total}`、`NewPaginatedResponse`。
 - **embed**：`//go:embed web/dist` + `fs.Sub` + SPA fallback 处理 `/*` 非 API 路由回退 index.html。
-  （gitfolio 用 fiber；groom 改用 echo/v5 等价实现。）
+  （gitfolio 用 fiber；flock 改用 echo/v5 等价实现。）
 
 ## 2026-09-06 — 依赖版本与 replace
 - echo/v5 可获取，最新 `v5.3.1`。go 1.27.1，GOPROXY=goproxy.cn。

@@ -3,7 +3,7 @@ package handlers
 import (
 	"time"
 
-	"github.com/azhai/gouache/models"
+	"github.com/azhai/flock/models"
 )
 
 func timeNow() time.Time { return time.Now() }

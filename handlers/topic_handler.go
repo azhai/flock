@@ -4,12 +4,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/azhai/flock/config"
+	"github.com/azhai/flock/helpers"
+	"github.com/azhai/flock/middleware"
+	"github.com/azhai/flock/models"
 	"github.com/azhai/goent"
 	"github.com/azhai/goent/model"
-	"github.com/azhai/gouache/config"
-	"github.com/azhai/gouache/helpers"
-	"github.com/azhai/gouache/middleware"
-	"github.com/azhai/gouache/models"
 	"github.com/labstack/echo/v5"
 )
 
@@ -31,6 +31,28 @@ func ListTopics(c *echo.Context) error {
 	p := helpers.GetPagination(c)
 
 	query := db.Topic.Select()
+
+	// 全文检索分支：FTS5(trigram) 覆盖标题+正文，按相关度排序
+	if fq := strings.TrimSpace(c.QueryParam("q")); fq != "" {
+		total, ids := models.SearchTopics(db, fq, helpers.GetOffset(p.Page, p.PerPage), p.PerPage)
+		topics, _ := db.Topic.Select().
+			Filter(goent.In(db.Topic.Field("id"), ids)).
+			With("User", "Category").
+			All()
+		// 保持 FTS 相关度顺序
+		byID := make(map[int64]*models.Topic, len(topics))
+		for _, t := range topics {
+			byID[t.ID] = t
+		}
+		ordered := make([]*models.Topic, 0, len(ids))
+		for _, id := range ids {
+			if t, ok := byID[id]; ok {
+				ordered = append(ordered, t)
+			}
+		}
+		return c.JSON(200, buildTopicsResponse(c, db, ordered, total, p))
+	}
+
 	if cid := strings.TrimSpace(c.QueryParam("category_id")); cid != "" {
 		if id, err := strconv.ParseInt(cid, 10, 64); err == nil {
 			query = query.Where("category_id = ?", id)
@@ -80,7 +102,11 @@ func ListTopics(c *echo.Context) error {
 	if err != nil {
 		return c.JSON(500, helpers.ErrorJSON("加载话题失败"))
 	}
+	return c.JSON(200, buildTopicsResponse(c, db, topics, total, p))
+}
 
+// buildTopicsResponse 组装话题列表响应：标签/参与者/收藏/关注 + 分页信息。
+func buildTopicsResponse(c *echo.Context, db *models.Database, topics []*models.Topic, total int64, p helpers.PaginationParams) *helpers.Response {
 	tagSet := make(map[int64][]*models.Tag)
 	parts := make(map[int64][]*models.User)
 	if len(topics) > 0 {
@@ -111,7 +137,7 @@ func ListTopics(c *echo.Context) error {
 		t.Followed = followed[t.ID]
 		resp = append(resp, ToTopicResponse(t, 0))
 	}
-	return c.JSON(200, helpers.NewPaginatedResponse(resp, p.Page, p.PerPage, total))
+	return helpers.NewPaginatedResponse(resp, p.Page, p.PerPage, total)
 }
 
 // GetTopic 话题详情，浏览量 +1

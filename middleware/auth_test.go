@@ -4,9 +4,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/azhai/flock/config"
+	"github.com/azhai/flock/models"
 	"github.com/azhai/gobus/environ"
-	"github.com/azhai/gouache/config"
-	"github.com/azhai/gouache/models"
 	"github.com/labstack/echo/v5"
 )
 

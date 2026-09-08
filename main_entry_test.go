@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/azhai/gouache/config"
-	"github.com/azhai/gouache/models"
+	"github.com/azhai/flock/config"
+	"github.com/azhai/flock/models"
 )
 
 // 关闭数据库后调用各 seed 函数，使每个内部 DB 操作都返回错误，
@@ -45,7 +45,7 @@ func TestClosedDBAPIHandlers(t *testing.T) {
 	}{
 		{"list-categories", http.MethodGet, "/api/v1/categories", "", nil},
 		{"create-category", http.MethodPost, "/api/v1/categories", adminTok, map[string]any{"name": "x"}},
-		{"register-insert", http.MethodPost, "/api/v1/auth/register", "", map[string]any{"username": "zzz_new", "email": "zzz@gouache.local", "password": "secret1"}},
+		{"register-insert", http.MethodPost, "/api/v1/auth/register", "", map[string]any{"username": "zzz_new", "email": "zzz@flock.local", "password": "secret1"}},
 		{"admin-list-users", http.MethodGet, "/api/v1/admin/users", adminTok, nil},
 		{"admin-list-reports", http.MethodGet, "/api/v1/reports", adminTok, nil},
 		{"list-tags", http.MethodGet, "/api/v1/tags", "", nil},
