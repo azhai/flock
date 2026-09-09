@@ -89,6 +89,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("导入失败: %v", err)
 	}
+	if err := models.RebuildSearchIndex(models.GetDB()); err != nil {
+		log.Fatalf("重建全文索引失败: %v", err)
+	}
 	log.Printf("导入完成: topics=%d posts=%d users=%d skipped=%d",
 		st.topics, st.posts, st.users, st.skipped)
 }

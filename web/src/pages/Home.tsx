@@ -163,7 +163,7 @@ export default function Home() {
               {topics.map((t: any) => {
                 const parts = t.participants?.length ? t.participants : (t.user ? [t.user] : []);
                 return (
-                  <Box key={t.id} as={RouterLink} to={`/topics/${t.id}?cat=${catSlug || ''}${tag ? `&tag=${tag}` : ''}`} display="block" px={3} py={4} _hover={{ bg: bgHover }} transition="background 0.12s ease">
+                  <Box key={t.id} as={RouterLink} to={`/topics/${t.id}?back=${encodeURIComponent(`cat=${catSlug || ''}${tag ? `&tag=${tag}` : ''}${sort !== 'latest' ? `&sort=${sort}` : ''}${page > 1 ? `&page=${page}` : ''}`)}`} display="block" px={3} py={4} _hover={{ bg: bgHover }} transition="background 0.12s ease">
                     <Grid templateColumns="minmax(0, 1fr) 52px 52px 110px" gap={4} alignItems="center">
                       <Box minW={0}>
                         <HStack spacing={1.5} mb={1}>

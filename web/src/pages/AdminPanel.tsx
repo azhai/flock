@@ -20,7 +20,7 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FiPlus, FiTrash2, FiFlag, FiLock, FiStar, FiUnlock, FiMessageSquare } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiFlag, FiLock, FiStar, FiUnlock, FiMessageSquare, FiEye, FiEyeOff } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -110,9 +110,16 @@ export default function AdminPanel() {
   const [topics, setTopics] = useState<any[]>([]);
   const [topicPage, setTopicPage] = useState(1);
   const [topicTotal, setTopicTotal] = useState(0);
+  const [topicHidden, setTopicHidden] = useState('');
   const topicPerPage = 20;
   const loadTopics = (page = topicPage) =>
-    api.listTopics({ sort: 'latest', page }).then((d: any) => { setTopics(d.data || []); setTopicTotal(d.total || 0); }).catch(() => {});
+    api.listTopics({ sort: 'latest', hidden: topicHidden || undefined, page }).then((d: any) => { setTopics(d.data || []); setTopicTotal(d.total || 0); }).catch(() => {});
+  const toggleHideTopic = (t: any) => {
+    const next = !t.hidden;
+    if (next && !window.confirm(`隐藏话题「${t.title}」？隐藏后前台不再显示。`)) return;
+    api.hideTopic(t.id, next).then(() => { loadTopics(); toast({ title: next ? '已隐藏' : '已恢复显示', status: 'success' }); })
+      .catch(() => toast({ title: '操作失败', status: 'error' }));
+  };
   const topicAct = (t: any, fn: any, msg: string) => {
     fn(t.id).then(() => { loadTopics(); toast({ title: msg, status: 'success' }); })
       .catch(() => toast({ title: '操作失败', status: 'error' }));
@@ -137,7 +144,7 @@ export default function AdminPanel() {
     if (tabIdx === 3) loadTopics(topicPage);
     if (tabIdx === 4) loadUsers(userPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topicPage, userPage, uq, tabIdx]);
+  }, [topicPage, userPage, uq, topicHidden, tabIdx]);
   const saveUser = (u: any, patch: any, msg: string) => {
     api.adminUpdateUser(u.username, patch).then(() => { loadUsers(); toast({ title: msg, status: 'success' }); })
       .catch(() => toast({ title: '保存失败', status: 'error' }));
@@ -244,13 +251,26 @@ export default function AdminPanel() {
 
           {/* 话题 */}
           <TabPanel px={0}>
+            <Flex align="center" gap={3} mb={4} flexWrap="wrap">
+              <Select w="140px" value={topicHidden} onChange={(e) => { setTopicHidden(e.target.value); setTopicPage(1); }} bg={bg} borderColor={borderColor} color={textPrimary} size="sm">
+                <option value="">正常</option>
+                <option value="1">已隐藏</option>
+                <option value="all">全部</option>
+              </Select>
+            </Flex>
             <Stack spacing={2}>
               {topics.map((t) => (
                 <Flex key={t.id} align="center" gap={3} bg={bg} border="1px" borderColor={borderColor} rounded="md" p={3}>
+                  {t.hidden && (
+                    <Box fontSize="11px" fontWeight="700" color="#8a9099" bg={bgHover} px={1.5} py={0.5} borderRadius="4px" flexShrink={0}>已隐藏</Box>
+                  )}
                   <Box minW={0} flex={1}>
                     <Text as={RouterLink} to={`/topics/${t.id}`} fontWeight="600" color={textPrimary} isTruncated _hover={{ color: accent }}>{t.title}</Text>
                     <Text fontSize="xs" color={textMuted}>{t.user?.username} · {t.reply_count} 回复 / {t.views_count} 浏览</Text>
                   </Box>
+                  <Button size="xs" variant="ghost" color={t.hidden ? '#2f855a' : textSecondary} _hover={{ bg: bgHover, color: t.hidden ? '#276749' : textPrimary }} onClick={() => toggleHideTopic(t)}>
+                    <Icon as={t.hidden ? FiEye : FiEyeOff} boxSize={3} />
+                  </Button>
                   <Button size="xs" variant="ghost" color={textSecondary} _hover={{ bg: bgHover }} onClick={() => topicAct(t, t.pinned ? api.unpinTopic : api.pinTopic, t.pinned ? '已取消置顶' : '已置顶')}>
                     <Icon as={t.pinned ? FiUnlock : FiStar} boxSize={3} />
                   </Button>

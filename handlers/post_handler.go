@@ -199,6 +199,9 @@ func UpdatePost(c *echo.Context) error {
 	if err := db.Post.Save().One(post); err != nil {
 		return c.JSON(500, helpers.ErrorJSON("更新帖子失败"))
 	}
+	if post.PostNumber == 1 {
+		models.ReindexTopic(post.TopicID) // 首帖变更会改变检索摘要
+	}
 	return c.JSON(200, ToPostResponse(post, false))
 }
 

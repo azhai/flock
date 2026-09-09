@@ -32,6 +32,18 @@ func ListTopics(c *echo.Context) error {
 	p := helpers.GetPagination(c)
 
 	query := db.Topic.Select()
+	// 可见性：公开列表默认排除隐藏(0)；仅 staff 可通过 hidden 参数查看已隐藏(1)/全部(all)
+	if hv := strings.TrimSpace(c.QueryParam("hidden")); hv != "" && middleware.IsStaff(c) {
+		if hv == "all" {
+			// 不过滤（全部）
+		} else if hv == "1" {
+			query = query.Where("hidden = ?", 1)
+		} else {
+			query = query.Where("hidden = ?", 0)
+		}
+	} else {
+		query = query.Where("hidden = ?", 0)
+	}
 
 	// 全文检索分支：FTS5(trigram) 覆盖标题+正文，按相关度排序
 	if fq := strings.TrimSpace(c.QueryParam("q")); fq != "" {
@@ -152,6 +164,10 @@ func GetTopic(c *echo.Context) error {
 	if err != nil || topic == nil {
 		return c.JSON(404, helpers.ErrorJSON("话题不存在"))
 	}
+	// 已隐藏话题仅作者/staff 可见（可用于恢复显示）
+	if topic.Hidden && !canEditTopic(c, topic) {
+		return c.JSON(404, helpers.ErrorJSON("话题不存在"))
+	}
 	_ = db.Topic.Update().
 		Set(goent.Pair{Key: "views_count", Value: topic.ViewsCount + 1}).
 		Filter(goent.Equals(db.Topic.Field("id"), topic.ID)).
@@ -250,10 +266,20 @@ func CreateTopic(c *echo.Context) error {
 		return nil
 	})
 	if err != nil {
+		println("CreateTopic tx err:", err.Error())
 		return c.JSON(500, helpers.ErrorJSON("创建话题失败"))
 	}
 
-	created, _ := db.Topic.Select().Where("id = ?", topic.ID).With("User", "Category").One()
+	created, err := db.Topic.Select().Where("id = ?", topic.ID).With("User", "Category").One()
+	if created == nil {
+		println("CreateTopic created=nil err:", (func() string {
+			if err == nil {
+				return "<nil>"
+			}
+			return err.Error()
+		})())
+		return c.JSON(500, helpers.ErrorJSON("创建话题失败"))
+	}
 	created.Tags = topic.Tags
 	created.Followed = true // 作者默认关注自己的话题
 	// 首帖里的 @提及 也触发通知
@@ -262,6 +288,7 @@ func CreateTopic(c *echo.Context) error {
 		One(); err == nil && first != nil {
 		createMentionNotifications(first, user.ID)
 	}
+	models.ReindexTopic(topic.ID) // 新话题标题+首帖进全文索引
 	return c.JSON(201, ToTopicResponse(created, 0))
 }
 
@@ -345,6 +372,7 @@ func UpdateTopic(c *echo.Context) error {
 		return c.JSON(500, helpers.ErrorJSON("更新话题失败"))
 	}
 	topic.Tags = loadTopicTags([]int64{topic.ID})[topic.ID]
+	models.ReindexTopic(topic.ID) // 标题可能变更，刷新检索标题
 	return c.JSON(200, ToTopicResponse(topic, 0))
 }
 
@@ -497,7 +525,39 @@ func DeleteTopic(c *echo.Context) error {
 	if err != nil {
 		return c.JSON(500, helpers.ErrorJSON("删除话题失败"))
 	}
+	models.RemoveTopicIndex(topic.ID) // 移除全文索引条目
 	return c.JSON(200, map[string]any{"message": "deleted"})
+}
+
+// HideTopic 隐藏/恢复显示话题（软隐藏，作者或 staff；非物理删除）
+func HideTopic(c *echo.Context) error {
+	topic, err := findTopic(c)
+	if err != nil {
+		return c.JSON(404, helpers.ErrorJSON("话题不存在"))
+	}
+	if !canEditTopic(c, topic) {
+		return c.JSON(403, helpers.ErrorJSON("无权限操作该话题"))
+	}
+	var req struct {
+		Hidden *bool `json:"hidden"`
+	}
+	_ = c.Bind(&req)
+	hidden := !topic.Hidden
+	if req.Hidden != nil {
+		hidden = *req.Hidden
+	}
+	db := models.GetDB()
+	if err := db.Topic.Update().
+		Set(
+			goent.Pair{Key: "hidden", Value: hidden},
+			goent.Pair{Key: "updated_at", Value: timeNow()},
+		).
+		Filter(goent.Equals(db.Topic.Field("id"), topic.ID)).
+		Exec(); err != nil {
+		return c.JSON(500, helpers.ErrorJSON("操作失败"))
+	}
+	visible := !hidden
+	return c.JSON(200, map[string]any{"hidden": hidden, "visible": visible})
 }
 
 // PinTopic / UnpinTopic 置顶（staff）

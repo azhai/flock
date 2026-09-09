@@ -15,4 +15,6 @@ export const useStore = create((set) => ({
     localStorage.removeItem('token');
     set({ user: null, token: null });
   },
+  headerTitle: null,          // 话题页滚动时，贴在 Header 内侧显示的话题标题
+  setHeaderTitle: (t) => set({ headerTitle: t }),
 }));

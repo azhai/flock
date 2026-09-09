@@ -106,6 +106,7 @@ type TopicResponse struct {
 	Participants []*UserResponse   `json:"participants,omitempty"`
 	Pinned       bool              `json:"pinned"`
 	Closed       bool              `json:"closed"`
+	Hidden       bool              `json:"hidden"`
 	Bookmarked   bool              `json:"bookmarked"`
 	Followed     bool              `json:"followed"`
 	ViewsCount   int               `json:"views_count"`
@@ -129,6 +130,7 @@ func ToTopicResponse(t *models.Topic, catTopicsCount int64) *TopicResponse {
 		User:         ToUserResponse(t.User),
 		Pinned:       t.Pinned,
 		Closed:       t.Closed,
+		Hidden:       t.Hidden,
 		Bookmarked:   t.Bookmarked,
 		Followed:     t.Followed,
 		ViewsCount:   t.ViewsCount,

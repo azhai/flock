@@ -40,6 +40,7 @@ func SetupAPIRoutes(e *echo.Echo) {
 	authed.POST("/topics/:id/unpin", handlers.UnpinTopic)
 	authed.POST("/topics/:id/close", handlers.CloseTopic)
 	authed.POST("/topics/:id/open", handlers.OpenTopic)
+	authed.POST("/topics/:id/hide", handlers.HideTopic)
 	authed.PUT("/posts/:id", handlers.UpdatePost)
 	authed.DELETE("/posts/:id", handlers.DeletePost)
 	authed.POST("/posts/:id/like", handlers.ToggleLike)

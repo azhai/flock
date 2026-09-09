@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Avatar,
   Box,
@@ -26,7 +26,7 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FiMessageSquare, FiLock, FiSend, FiMapPin, FiArrowLeft, FiBookmark, FiEdit2, FiTrash2, FiFlag, FiX, FiArrowUp, FiArrowDown, FiBell } from 'react-icons/fi';
+import { FiMessageSquare, FiLock, FiSend, FiMapPin, FiArrowLeft, FiBookmark, FiEdit2, FiTrash2, FiFlag, FiX, FiArrowUp, FiArrowDown, FiBell, FiFolder, FiTag } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -42,7 +42,8 @@ import Sidebar from '../components/Sidebar';
 export default function TopicDetail() {
   const { id } = useParams();
   const nav = useNavigate();
-  const { user } = useStore();
+  const loc = useLocation();
+  const { user, setHeaderTitle } = useStore();
   const [topic, setTopic] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [reply, setReply] = useState('');
@@ -195,6 +196,8 @@ export default function TopicDetail() {
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
+    // 标题滚出内容区后，交由顶部 Header（Logo 之后）展示；反之清除
+    setHeaderTitle(el.scrollTop > 60 && topic ? topic.title : null);
     const st = el.scrollTop + 60;
     let cur: string | null = null;
     for (const p of allPosts) {
@@ -297,7 +300,7 @@ export default function TopicDetail() {
   useEffect(() => {
     if (!allPosts.length) return;
     syncNodes();
-    handleScroll();
+    // 打开时停留在顶部展示标题与主帖，不在加载阶段吸附/滚动到内容区
     const t = setTimeout(() => {
       if (railRef.current) setRailH(railRef.current.clientHeight); // 加载后才有真实列高
       syncNodes();
@@ -307,13 +310,16 @@ export default function TopicDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts]);
 
-  // 打开详情/切换 id 时：回到顶部并把浏览焦点落在主帖内容区，滚轮立即可用
+  // 打开详情/切换 id 时：回到顶部并把浏览焦点落在主帖内容区，滚轮立即可用；
+  // 卸载时清空 Header 里的话题标题
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = 0;
     setProg(0);
+    setHeaderTitle(null);
     el.focus({ preventScroll: true });
+    return () => setHeaderTitle(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -326,11 +332,24 @@ export default function TopicDetail() {
       .catch(() => toast({ title: '操作失败', status: 'error' }));
   };
 
-  const confirmDeleteTopic = () => {
-    if (!window.confirm('确定删除整个话题（含所有回复）？此操作不可撤销。')) return;
-    api.deleteTopic(id)
-      .then(() => nav('/'))
-      .catch(() => toast({ title: '删除失败', status: 'error' }));
+  const toggleHide = () => {
+    if (!canEditTopic) return;
+    const next = !topic?.hidden;
+    if (next && !window.confirm('隐藏话题后前台将不再显示，确定隐藏？')) return;
+    api.hideTopic(id, next)
+      .then(() => {
+        setTopic((t: any) => (t ? { ...t, hidden: next } : t));
+        toast({ title: next ? '已隐藏，列表不再显示' : '已恢复显示', status: 'success' });
+      })
+      .catch(() => toast({ title: '操作失败', status: 'error' }));
+  };
+
+  // 返回列表：优先还原来源分类/标签/排序/页码；缺失时回退到浏览器后退，再兜底首页
+  const toBack = () => {
+    const back = new URLSearchParams(loc.search).get('back');
+    if (back) { nav('/?' + back); return; }
+    if (window.history.length > 1) { nav(-1); return; }
+    nav('/');
   };
 
   // 滑块几何：可视区高度占比对应的滑块大小与位置（右侧钓鱼线刻度条）
@@ -361,7 +380,7 @@ export default function TopicDetail() {
 
   return (
     <Box maxW="1180px" mx="auto">
-      <Grid templateColumns={{ base: '1fr', md: '180px minmax(0, 1fr) 110px' }} gap={0} alignItems="start">
+      <Grid templateColumns={{ base: '1fr', md: '180px minmax(0, 1fr) 210px' }} gap={0} alignItems="start">
       {/* 左侧：分类 + 热门标签，保持与首页一致，跳转后选中状态不变 */}
       <Box
         display={{ base: 'none', md: 'block' }}
@@ -375,8 +394,8 @@ export default function TopicDetail() {
         <Sidebar />
       </Box>
       <Box minW={0} px={{ base: 4, md: 6 }} py={6} display="flex" flexDirection="column" maxH="calc(100vh - 52px)">
-      {/* 话题头部 */}
-      <Box mb={6} flexShrink={0}>
+      {/* 话题头部（md+ 时分类/作者/操作均移入右侧栏，此区仅移动端展示） */}
+      <Box mb={6} flexShrink={0} display={{ base: 'block', md: 'none' }}>
         <HStack spacing={2} mb={3} flexWrap="wrap">
           {topic.pinned && (
             <HStack spacing={1} fontSize="11px" fontWeight="600" color="#d97706" bg="#fef3c7" px={2} py={1} borderRadius="4px">
@@ -399,9 +418,6 @@ export default function TopicDetail() {
             </Box>
           ))}
         </HStack>
-        <Heading size="lg" color={textPrimary} fontWeight="700" lineHeight="1.4" mb={3}>
-          {topic.title}
-        </Heading>
         <Flex align="center" justify="space-between" flexWrap="wrap" gap={2}>
           <HStack spacing={3} fontSize="sm" color={textMuted}>
             <Avatar size="xs" name={topic.user?.username} bg={accent} />
@@ -420,7 +436,7 @@ export default function TopicDetail() {
             {canEditTopic && (
               <>
                 <Button size="sm" variant="ghost" leftIcon={<Icon as={FiEdit2} boxSize={4} />} color={textSecondary} _hover={{ bg: bgHover, color: textPrimary }} onClick={openEditTopic}>
-                  编辑
+                  修改
                 </Button>
                 <Button size="sm" variant="ghost" color={textSecondary} _hover={{ bg: bgHover }} onClick={() => setFlag(topic.pinned ? api.unpinTopic : api.pinTopic, topic.pinned ? '已取消置顶' : '已置顶')}>
                   <Icon as={FiFlag} boxSize={4} />
@@ -428,7 +444,7 @@ export default function TopicDetail() {
                 <Button size="sm" variant="ghost" color={textSecondary} _hover={{ bg: bgHover }} onClick={() => setFlag(topic.closed ? api.openTopic : api.closeTopic, topic.closed ? '已解锁' : '已锁定')}>
                   <Icon as={topic.closed ? FiMessageSquare : FiLock} boxSize={4} />
                 </Button>
-                <Button size="sm" variant="ghost" color="#c53030" _hover={{ bg: bgHover }} onClick={confirmDeleteTopic}>
+                <Button size="sm" variant="ghost" color={topic.hidden ? textSecondary : '#c53030'} _hover={{ bg: bgHover }} onClick={toggleHide}>
                   <Icon as={FiTrash2} boxSize={4} />
                 </Button>
               </>
@@ -445,11 +461,25 @@ export default function TopicDetail() {
         overflowY="auto"
         flex="1"
         minH={0}
-        pr={{ base: 1, md: 1 }}
+        pr={{ base: 6, md: 8 }}
         tabIndex={-1}
         outline="none"
-        className="forum-thin-scroll"
+        className="no-scrollbar"
       >
+      {/* 标题：随内容一起滚动；滚出后由顶部 Header 接收显示 */}
+      <Box borderBottom="1px" borderColor={borderColor} pb={2} mb={4}>
+        <Heading
+          size="lg"
+          color={textPrimary}
+          fontWeight="700"
+          noOfLines={1}
+          overflow="hidden"
+          textOverflow="ellipsis"
+          lineHeight="1.3"
+        >
+          {topic.title}
+        </Heading>
+      </Box>
       {/* 帖子流：主贴直接显示，回复用卡片分隔。每帖包一层 div 供右侧节点定位 */}
       {firstPost && (
         <div key={firstPost.id} ref={registerPost(firstPost.id)}>
@@ -496,56 +526,13 @@ export default function TopicDetail() {
           </div>
         ))}
       </Stack>
-      </Box>
 
-      {/* 回复框：固定在底部，不随帖子和回复一起滚动 */}
-      <Box flexShrink={0} mt={6} bg={bgSub} rounded="md" p={4} border="1px" borderColor={borderColor}>
-        {topic.closed ? (
-          <Text color="#c53030" fontSize="sm" fontWeight="600">话题已锁定，无法回复</Text>
-        ) : (
-          <>
-            <Box data-color-mode={isDark ? 'dark' : 'light'} mb={3}>
-              <MDEditor
-                value={reply}
-                onChange={(v) => setReply(v || '')}
-                height={120}
-                preview="edit"
-                previewOptions={{ components: { code: CodeBlock } }}
-                textareaProps={{ placeholder: '写下你的回复…（支持 Markdown，单回车自动换行）' }}
-              />
-            </Box>
-            <Flex justify="flex-end">
-              <Button
-                size="sm"
-                bg={accent}
-                color="white"
-                onClick={submitReply}
-                rightIcon={<Icon as={FiSend} boxSize={3} />}
-                rounded="md"
-                _hover={{ bg: '#0a7359' }}
-                fontWeight="600"
-              >
-                回复
-              </Button>
-            </Flex>
-          </>
-        )}
-      </Box>
-      </Box>
-
-      {/* 右侧：返回按钮 + 钓鱼线刻度式滚动条。刻度即各帖/回复，滑块显示当前可视区；拖拽/点击滚动 */}
-      <Box as="aside" display={{ base: 'none', md: 'flex' }} flexDirection="column" alignItems="center" pos="sticky" top="52px" maxH="calc(100vh - 52px)" pl={3} pr={3} pt={2} pb={2} borderLeft="1px" borderColor={borderColor}>
-        <Flex justify="flex-end" w="full" mb={3}>
-          <Button as={RouterLink} to="/" variant="ghost" size="sm" color={textSecondary} _hover={{ bg: bgHover, color: textPrimary }} px={1}>
-            <Icon as={FiArrowLeft} boxSize={4} /> 返回
-          </Button>
-        </Flex>
+      {/* 右侧钓鱼线刻度式滚动条：迁入内容区右边缘覆盖，原生滚动条已隐藏 */}
+      <Box pos="absolute" top={0} bottom={0} right={0} w="26px" zIndex={3} display="flex" flexDirection="column">
         <Box
           ref={railRef}
           flex="1"
           pos="relative"
-          w="26px"
-          minH="160px"
           cursor="grab"
           userSelect="none"
           touchAction="none"
@@ -600,12 +587,144 @@ export default function TopicDetail() {
           />
         </Box>
         {/* 当前所在帖子标签 */}
-        <Text fontSize="xs" color={textMuted} textAlign="center" pt={3} isTruncated>
+        <Text fontSize="xs" color={textMuted} textAlign="center" pt={2} isTruncated>
           {(() => {
             const p = allPosts.find((x: any) => x.id === (activePostId ?? allPosts[0]?.id ?? null));
             return p ? (p.post_number === 1 ? '主贴' : '回复 #' + p.post_number) : '';
           })()}
         </Text>
+      </Box>
+      </Box>
+
+      {/* 回复框：固定在底部，不随帖子和回复一起滚动 */}
+      <Box flexShrink={0} mt={6} bg={bgSub} rounded="md" p={4} border="1px" borderColor={borderColor}>
+        {topic.closed ? (
+          <Text color="#c53030" fontSize="sm" fontWeight="600">话题已锁定，无法回复</Text>
+        ) : (
+          <>
+            <Box data-color-mode={isDark ? 'dark' : 'light'} mb={3}>
+              <MDEditor
+                value={reply}
+                onChange={(v) => setReply(v || '')}
+                height={120}
+                preview="edit"
+                previewOptions={{ components: { code: CodeBlock } }}
+                textareaProps={{ placeholder: '写下你的回复…（支持 Markdown，单回车自动换行）' }}
+              />
+            </Box>
+            <Flex justify="flex-end">
+              <Button
+                size="sm"
+                bg={accent}
+                color="white"
+                onClick={submitReply}
+                rightIcon={<Icon as={FiSend} boxSize={3} />}
+                rounded="md"
+                _hover={{ bg: '#0a7359' }}
+                fontWeight="600"
+              >
+                回复
+              </Button>
+            </Flex>
+          </>
+        )}
+      </Box>
+      </Box>
+
+      {/* 右侧：返回按钮 + 钓鱼线刻度式滚动条。刻度即各帖/回复，滑块显示当前可视区；拖拽/点击滚动 */}
+      <Box as="aside" display={{ base: 'none', md: 'flex' }} flexDirection="column" alignItems="center" pos="sticky" top="52px" maxH="calc(100vh - 52px)" pl={3} pr={3} pt={2} pb={2} borderLeft="1px" borderColor={borderColor}>
+        <Flex justify="flex-end" w="full" mb={5}>
+          <Button variant="ghost" size="sm" color={textSecondary} _hover={{ bg: bgHover, color: textPrimary }} px={1} onClick={toBack}>
+            <Icon as={FiArrowLeft} boxSize={4} /> 返回
+          </Button>
+        </Flex>
+
+        {/* 右侧元信息：状态/分类（单独一行）+ 标签（单独一行）→ 作者/时间 → 操作 */}
+        <Flex flexDirection="column" gap={5} w="full" alignItems="flex-start" mb={6}>
+          {/* 状态/分类行：置顶、锁定 + 分类（带图标），分类独立一行 */}
+          <Flex flexWrap="wrap" gap={2} justify="flex-start" alignItems="center">
+            {topic.pinned && (
+              <HStack spacing={1} fontSize="11px" fontWeight="600" color="#d97706" bg="#fef3c7" px={2} py={1} borderRadius="4px">
+                <Icon as={FiMapPin} boxSize={3} /> 置顶
+              </HStack>
+            )}
+            {topic.closed && (
+              <HStack spacing={1} fontSize="11px" fontWeight="600" color="#c53030" bg="#fed7d7" px={2} py={1} borderRadius="4px">
+                <Icon as={FiLock} boxSize={3} /> 已锁定
+              </HStack>
+            )}
+            {/* 分类行：无分类时显示“未分类” */}
+            <HStack spacing={1.5} alignItems="center">
+              <Icon as={FiFolder} boxSize={3.5} color={topic.category?.color || textMuted} />
+              <Box fontSize="11px" fontWeight="600" color={topic.category ? topic.category.color : textMuted} bg={topic.category ? topic.category.color + '1a' : bgHover} px={2} py={1} borderRadius="4px">
+                {topic.category ? topic.category.name : '未分类'}
+              </Box>
+            </HStack>
+          </Flex>
+
+          {/* 标签行：行首带一个小图标 */}
+          <Flex flexWrap="wrap" gap={1.5} justify="flex-start" alignItems="center">
+            <Icon as={FiTag} boxSize={3.5} color={textMuted} flexShrink={0} />
+            {topic.tags?.length ? topic.tags.map((tag: any) => (
+              <Box as={RouterLink} key={tag.id} to={`/?tag=${tag.slug}`} fontSize="11px" fontWeight="600" color={textSecondary} bg={bgHover} px={2} py={1} borderRadius="4px" _hover={{ bg: accent + '1a', color: textPrimary }}>
+                #{tag.name}
+              </Box>
+            )) : <Text fontSize="11px" color={textMuted}>暂无标签</Text>}
+          </Flex>
+
+          <Box>
+            {/* 头像加大；用户名+等级同一行；日期时间在下一行 */}
+            <HStack spacing={3} alignItems="center">
+              <Avatar size="md" name={topic.user?.username} bg={accent} />
+              <Flex flexDirection="column" alignItems="flex-start">
+                <HStack spacing={1.5} alignItems="center">
+                  <Text fontWeight="600" fontSize="sm" color={textSecondary}>{topic.user?.username}</Text>
+                  {(() => {
+                    const lv: any = LEVEL_META[(topic.user as any)?.level] || { name: (topic.user as any)?.level_name || '', color: textMuted };
+                    return lv.name ? (
+                      <Box fontSize="10px" fontWeight="600" color={lv.color} bg={lv.color + '1a'} px={1.5} py={0.5} borderRadius="4px">{lv.name}</Box>
+                    ) : null;
+                  })()}
+                </HStack>
+                <Text fontSize="xs" color={textMuted}>{formatDate(topic.created_at)}</Text>
+              </Flex>
+            </HStack>
+            <HStack spacing={3} fontSize="xs" color={textMuted} mt={1.5}>
+              <Text>{topic.views_count} 浏览</Text>
+              <Text>{topic.posts_count} 回复</Text>
+            </HStack>
+          </Box>
+
+          {/* 操作区：上一行 = 更改/隐藏（带名称，仅可编辑时）；下一行 = 图标按钮（收藏/关注/置顶/锁定） */}
+          {canEditTopic && (
+            <Flex flexWrap="wrap" gap={1.5} justify="flex-start">
+              <Button size="xs" variant="ghost" leftIcon={<Icon as={FiEdit2} boxSize={3.5} />} color={textSecondary} _hover={{ bg: bgHover, color: textPrimary }} onClick={openEditTopic}>
+                更改
+              </Button>
+              <Button size="xs" variant="ghost" leftIcon={<Icon as={FiTrash2} boxSize={3.5} />} color={topic.hidden ? textSecondary : '#c53030'} _hover={{ bg: bgHover }} onClick={toggleHide}>
+                {topic.hidden ? '显示' : '隐藏'}
+              </Button>
+            </Flex>
+          )}
+          <Flex flexWrap="wrap" gap={0.5} justify="flex-start" alignItems="center">
+            <Button size="xs" variant="ghost" p={1.5} title="收藏" aria-label="收藏" color={topic.bookmarked ? accent : textSecondary} _hover={{ bg: bgHover }} onClick={toggleBookmark}>
+              <Icon as={FiBookmark} boxSize={4} />
+            </Button>
+            <Button size="xs" variant="ghost" p={1.5} title="关注" aria-label="关注" color={topic.followed ? accent : textSecondary} _hover={{ bg: bgHover }} onClick={toggleFollow}>
+              <Icon as={FiBell} boxSize={4} />
+            </Button>
+            {canEditTopic && (
+              <>
+                <Button size="xs" variant="ghost" p={1.5} title="置顶" aria-label="置顶" color={textSecondary} _hover={{ bg: bgHover }} onClick={() => setFlag(topic.pinned ? api.unpinTopic : api.pinTopic, topic.pinned ? '已取消置顶' : '已置顶')}>
+                  <Icon as={FiFlag} boxSize={4} />
+                </Button>
+                <Button size="xs" variant="ghost" p={1.5} title="锁定" aria-label="锁定" color={textSecondary} _hover={{ bg: bgHover }} onClick={() => setFlag(topic.closed ? api.openTopic : api.closeTopic, topic.closed ? '已解锁' : '已锁定')}>
+                  <Icon as={topic.closed ? FiMessageSquare : FiLock} boxSize={4} />
+                </Button>
+              </>
+            )}
+          </Flex>
+        </Flex>
       </Box>
       </Grid>
 

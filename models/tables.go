@@ -103,6 +103,7 @@ type Topic struct {
 	Pinned   bool `goe:"default:false;index"`
 	PinOrder int  `goe:"default:0"`
 	Closed   bool `goe:"default:false"`
+	Hidden   bool `goe:"default:false;index"`
 
 	ViewsCount   int        `goe:"default:0"`
 	PostsCount   int        `goe:"default:0"`

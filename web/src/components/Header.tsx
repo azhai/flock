@@ -32,7 +32,7 @@ const NOTIF_META: Record<string, { label: string; icon: any; color: string }> = 
 };
 
 export default function Header() {
-  const { user, logout } = useStore();
+  const { user, logout, headerTitle } = useStore();
   const { unread, notifs, markRead, markAll } = useNotifications(!!user);
   const nav = useNavigate();
   const [isMobile] = useMediaQuery('(max-width: 768px)');
@@ -78,9 +78,35 @@ export default function Header() {
           fontWeight="700"
           letterSpacing="-0.3px"
           fontSize="18px"
+          display="flex"
+          alignItems="center"
+          gap={2}
+          _hover={{ opacity: 0.85 }}
         >
+          <Box
+            w="30px"
+            h="30px"
+            borderRadius="6px"
+            overflow="hidden"
+            flexShrink={0}
+            bg="#00332B"
+            as="img"
+            src="/logo-forest.svg"
+            alt="Flock"
+            loading="eager"
+          />
           Flock
         </Heading>
+
+        {/* 话题页滚动时贴在 Logo 之后的话题标题（限长截断，不遮挡右侧搜索/用户区） */}
+        {headerTitle && (
+          <>
+            <Box w="1px" h="18px" bg={borderColor} ml={5} flexShrink={0} />
+            <Text mx={4} fontSize="sm" color={textSecondary} fontWeight="600" maxW={{ base: '140px', md: '280px' }} isTruncated flexShrink={1}>
+              {headerTitle}
+            </Text>
+          </>
+        )}
 
         <Spacer />
 

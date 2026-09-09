@@ -36,6 +36,7 @@ export const api = {
     if (params?.tag) q.set('tag', params.tag);
     if (params?.sort) q.set('sort', params.sort);
     if (params?.page) q.set('page', params.page);
+    if (params?.hidden) q.set('hidden', params.hidden);
     return req('GET', `/topics?${q.toString()}`);
   },
   getTopic: (id) => req('GET', `/topics/${id}`),
@@ -46,6 +47,7 @@ export const api = {
   unpinTopic: (id) => req('POST', `/topics/${id}/unpin`),
   closeTopic: (id) => req('POST', `/topics/${id}/close`),
   openTopic: (id) => req('POST', `/topics/${id}/open`),
+  hideTopic: (id, hidden) => req('POST', `/topics/${id}/hide`, { hidden }),
 
   // posts
   listPosts: (topicId, page) =>
