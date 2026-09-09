@@ -10,6 +10,7 @@ import {
   HStack,
   Heading,
   Icon,
+  Input,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -17,6 +18,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Select,
   Skeleton,
   Stack,
   Text,
@@ -31,6 +33,7 @@ import remarkBreaks from 'remark-breaks';
 import MDEditor from '@uiw/react-md-editor/nohighlight';
 import '@uiw/react-md-editor/markdown-editor.css';
 import CodeBlock from '../components/CodeBlock';
+import { TagInput, TagChips } from '../components/tag-input';
 import { ensureSyntaxHighlight } from '../lib/highlightProvider';
 import { api } from '../lib/api';
 import { useStore } from '../lib/store';
@@ -44,6 +47,11 @@ export default function TopicDetail() {
   const [posts, setPosts] = useState<any[]>([]);
   const [reply, setReply] = useState('');
   const [loading, setLoading] = useState(true);
+  const [cats, setCats] = useState<any[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [eTitle, setETitle] = useState('');
+  const [eCat, setECat] = useState('');
+  const [eTags, setETags] = useState<string[]>([]);
   const toast = useToast();
   const [isDark] = useState(() => false); // 单一浅色主题，编辑器始终 light
 
@@ -71,7 +79,29 @@ export default function TopicDetail() {
   // 提前懒加载语法高亮器，保证打开 Preview 时已就绪
   useEffect(() => {
     ensureSyntaxHighlight().catch(() => {});
+    api.listCategories().then(setCats).catch(() => {});
   }, []);
+
+  const openEditTopic = () => {
+    setETitle(topic?.title || '');
+    setECat(topic?.category_id ? String(topic.category_id) : '');
+    setETags((topic?.tags || []).map((x: any) => x.name));
+    setEditOpen(true);
+  };
+
+  const saveEditTopic = () => {
+    api.updateTopic(id, {
+      title: eTitle.trim(),
+      category_id: eCat ? Number(eCat) : null,
+      tags: eTags,
+    })
+      .then((t: any) => {
+        setTopic(t);
+        setEditOpen(false);
+        toast({ title: '话题已更新', status: 'success' });
+      })
+      .catch(() => toast({ title: '更新失败', status: 'error' }));
+  };
 
   const isStaff = !!user && (user.role === 'admin' || user.role === 'moderator');
   const canEditTopic = !!user && (isStaff || user.username === topic?.user?.username);
@@ -277,6 +307,16 @@ export default function TopicDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts]);
 
+  // 打开详情/切换 id 时：回到顶部并把浏览焦点落在主帖内容区，滚轮立即可用
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
+    setProg(0);
+    el.focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   const setFlag = (fn: any, okMsg: string) => {
     fn(id)
       .then(() => {
@@ -379,6 +419,9 @@ export default function TopicDetail() {
             </Button>
             {canEditTopic && (
               <>
+                <Button size="sm" variant="ghost" leftIcon={<Icon as={FiEdit2} boxSize={4} />} color={textSecondary} _hover={{ bg: bgHover, color: textPrimary }} onClick={openEditTopic}>
+                  编辑
+                </Button>
                 <Button size="sm" variant="ghost" color={textSecondary} _hover={{ bg: bgHover }} onClick={() => setFlag(topic.pinned ? api.unpinTopic : api.pinTopic, topic.pinned ? '已取消置顶' : '已置顶')}>
                   <Icon as={FiFlag} boxSize={4} />
                 </Button>
@@ -403,6 +446,8 @@ export default function TopicDetail() {
         flex="1"
         minH={0}
         pr={{ base: 1, md: 1 }}
+        tabIndex={-1}
+        outline="none"
         className="forum-thin-scroll"
       >
       {/* 帖子流：主贴直接显示，回复用卡片分隔。每帖包一层 div 供右侧节点定位 */}
@@ -413,7 +458,7 @@ export default function TopicDetail() {
           isOp
           user={user}
           isStaff={isStaff}
-          canEdit={!!user && user.username === firstPost.user?.username}
+          canEdit={!!user && (isStaff || user.username === firstPost.user?.username)}
           updatePostBody={updatePostBody}
           deletePostBody={deletePostBody}
           onVote={votePost}
@@ -463,7 +508,7 @@ export default function TopicDetail() {
               <MDEditor
                 value={reply}
                 onChange={(v) => setReply(v || '')}
-                height={180}
+                height={120}
                 preview="edit"
                 previewOptions={{ components: { code: CodeBlock } }}
                 textareaProps={{ placeholder: '写下你的回复…（支持 Markdown，单回车自动换行）' }}
@@ -588,6 +633,71 @@ export default function TopicDetail() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* 编辑话题模态框 */}
+      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} size="xl">
+        <ModalOverlay />
+        <ModalContent bg={bg}>
+          <ModalHeader>编辑话题</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <Stack spacing={4}>
+              <Box>
+                <Text fontWeight="600" mb={1} fontSize="sm" color={textPrimary}>标题</Text>
+                <Input
+                  value={eTitle}
+                  onChange={(e) => setETitle(e.target.value)}
+                  placeholder="标题：一句话说清你的话题"
+                  size="md"
+                  rounded="md"
+                  border="1px"
+                  borderColor={borderColor}
+                  bg={bgSub}
+                  color={textPrimary}
+                  _focus={{ borderColor: accent, boxShadow: 'none' }}
+                />
+              </Box>
+
+              <Grid templateColumns={{ base: '1fr', sm: '2fr 3fr' }} gap={4}>
+                <Box>
+                  <Text fontWeight="600" mb={1} fontSize="sm" color={textPrimary}>分类</Text>
+                  <Select
+                    value={eCat}
+                    onChange={(e) => setECat(e.target.value)}
+                    rounded="md"
+                    border="1px"
+                    borderColor={borderColor}
+                    bg={bgSub}
+                    color={textPrimary}
+                    size="md"
+                    _focus={{ borderColor: accent, boxShadow: 'none' }}
+                  >
+                    <option value="">选择分类（可选）</option>
+                    {cats.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </Select>
+                </Box>
+
+                <Box>
+                  <Text fontWeight="600" mb={1} fontSize="sm" color={textPrimary}>标签</Text>
+                  <TagInput value={eTags} onChange={setETags} accent={accent} borderColor={borderColor} bgInput={bgSub} textPrimary={textPrimary} textSecondary={textSecondary} />
+                </Box>
+              </Grid>
+
+              <Box>
+                <Text fontWeight="600" mb={1} fontSize="sm" color={textPrimary}>已选标签</Text>
+                <TagChips value={eTags} onChange={setETags} accent={accent} textSecondary={textSecondary} />
+              </Box>
+            </Stack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button size="sm" variant="ghost" mr={3} color={textSecondary} onClick={() => setEditOpen(false)}>取消</Button>
+            <Button size="sm" bg={accent} color="white" _hover={{ bg: '#0a7359' }} onClick={saveEditTopic} isDisabled={!eTitle.trim()}>保存</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
@@ -633,27 +743,27 @@ function PostCard({ post, user, isOp, canEdit, updatePostBody, deletePostBody, o
   if (isOp) {
     return (
       <Box pb={6}>
-        {editing ? (
-          <Box>
-            <Box data-color-mode={isDark ? 'dark' : 'light'} mb={2}>
-              <MDEditor value={draft} onChange={(v) => setDraft(v || '')} height={220} preview="edit" />
-            </Box>
-            <Flex gap={2} justify="flex-end">
-              <Button size="xs" variant="ghost" color={textMuted} onClick={() => setEditing(false)}>取消</Button>
-              <Button size="xs" colorScheme="teal" bg={accent} color="white" _hover={{ bg: '#0a7359' }} onClick={() => { updatePostBody(post, draft); setEditing(false); }}>保存</Button>
-            </Flex>
+      {editing ? (
+        <Box pl={3} pr={3}>
+          <Box data-color-mode={isDark ? 'dark' : 'light'} mb={2}>
+            <MDEditor value={draft} onChange={(v) => setDraft(v || '')} height={220} preview="edit" />
           </Box>
-        ) : (
-          <>
-            <Box className="markdown-content" color={textPrimary} fontSize="md" lineHeight="1.75">
-              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={{ code: CodeBlock }}>{post.raw}</ReactMarkdown>
-            </Box>
-            {actions}
-          </>
-        )}
-      </Box>
-    );
-  }
+          <Flex gap={2} justify="flex-end">
+            <Button size="xs" variant="ghost" color={textMuted} onClick={() => setEditing(false)}>取消</Button>
+            <Button size="xs" colorScheme="teal" bg={accent} color="white" _hover={{ bg: '#0a7359' }} onClick={() => { updatePostBody(post, draft); setEditing(false); }}>保存</Button>
+          </Flex>
+        </Box>
+      ) : (
+        <>
+          <Box className="markdown-content" color={textPrimary} fontSize="md" lineHeight="1.75">
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={{ code: CodeBlock }}>{post.raw}</ReactMarkdown>
+          </Box>
+          {actions}
+        </>
+      )}
+    </Box>
+  );
+}
 
   return (
     <Box py={5} px={2}>

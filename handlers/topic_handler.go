@@ -21,8 +21,9 @@ type CreateTopicRequest struct {
 }
 
 type UpdateTopicRequest struct {
-	Title      string `json:"title"`
-	CategoryID *int64 `json:"category_id"`
+	Title      string   `json:"title"`
+	CategoryID *int64   `json:"category_id"`
+	Tags       []string `json:"tags"`
 }
 
 // ListTopics 话题列表：sort=latest|top|likes|hot，支持 category_id 与 q 过滤
@@ -321,18 +322,84 @@ func UpdateTopic(c *echo.Context) error {
 	req.Title = strings.TrimSpace(req.Title)
 
 	db := models.GetDB()
-	if req.Title != "" {
-		topic.Title = req.Title
-		topic.Slug = helpers.Slugify(req.Title)
-	}
-	if req.CategoryID != nil {
-		topic.CategoryID = req.CategoryID
-	}
-	topic.UpdatedAt = timeNow()
-	if err := db.Topic.Save().One(topic); err != nil {
+	err = db.BeginTransaction(func(tx model.Transaction) error {
+		if req.Title != "" {
+			topic.Title = req.Title
+			topic.Slug = helpers.Slugify(req.Title)
+		}
+		if req.CategoryID != nil {
+			topic.CategoryID = req.CategoryID
+		}
+		topic.UpdatedAt = timeNow()
+		if err := db.Topic.Save().OnTransaction(tx).One(topic); err != nil {
+			return err
+		}
+		if req.Tags != nil {
+			if err := replaceTopicTags(tx, topic.ID, req.Tags); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		return c.JSON(500, helpers.ErrorJSON("更新话题失败"))
 	}
+	topic.Tags = loadTopicTags([]int64{topic.ID})[topic.ID]
 	return c.JSON(200, ToTopicResponse(topic, 0))
+}
+
+// replaceTopicTags 以给定标签集重建某话题的标签关联，并校正各 tag 计数（事务内调用）。
+func replaceTopicTags(tx model.Transaction, topicID int64, names []string) error {
+	db := models.GetDB()
+	// 1) 清空旧关联并回减计数
+	tts, err := db.TopicTag.Select().Where("topic_id = ?", topicID).OnTransaction(tx).All()
+	if err != nil {
+		return err
+	}
+	for _, tt := range tts {
+		tag, err := db.Tag.Select().Where("id = ?", tt.TagID).OnTransaction(tx).One()
+		if err != nil {
+			return err
+		}
+		if err := db.Tag.Update().
+			Set(goent.Pair{Key: "topics_count", Value: maxInt(tag.TopicsCount-1, 0)}).
+			Filter(goent.Equals(db.Tag.Field("id"), tt.TagID)).
+			OnTransaction(tx).
+			Exec(); err != nil {
+			return err
+		}
+		if err := db.TopicTag.Delete().
+			Filter(goent.Equals(db.TopicTag.Field("id"), tt.ID)).
+			OnTransaction(tx).
+			Exec(); err != nil {
+			return err
+		}
+	}
+	// 2) 重建关联（复用/新建标签）
+	seen := map[string]bool{}
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name == "" || seen[name] {
+			continue
+		}
+		seen[name] = true
+		tag, err := upsertTag(tx, name)
+		if err != nil {
+			return err
+		}
+		tt := &models.TopicTag{TopicID: topicID, TagID: tag.ID}
+		if err := db.TopicTag.Insert().OnTransaction(tx).One(tt); err != nil {
+			return err
+		}
+		if err := db.Tag.Update().
+			Set(goent.Pair{Key: "topics_count", Value: maxInt(tag.TopicsCount+1, 0)}).
+			Filter(goent.Equals(db.Tag.Field("id"), tag.ID)).
+			OnTransaction(tx).
+			Exec(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // DeleteTopic 删除话题并级联删除帖子与点赞（作者或 staff）

@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Flex,
+  Grid,
   Heading,
   Icon,
   Input,
@@ -17,10 +18,11 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FiSend, FiEdit3, FiLogIn, FiX, FiSmile } from 'react-icons/fi';
+import { FiSend, FiEdit3, FiLogIn, FiSmile } from 'react-icons/fi';
 import MDEditor from '@uiw/react-md-editor/nohighlight';
 import '@uiw/react-md-editor/markdown-editor.css';
 import CodeBlock from '../components/CodeBlock';
+import { TagInput, TagChips } from '../components/tag-input';
 import { ensureSyntaxHighlight } from '../lib/highlightProvider';
 import { api } from '../lib/api';
 import { useStore } from '../lib/store';
@@ -126,24 +128,27 @@ export default function NewTopic() {
                 _placeholder={{ color: textMuted, fontWeight: '400' }}
               />
 
-              <Select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                rounded="md"
-                border="1px"
-                borderColor={borderColor}
-                bg={bgInput}
-                color={textPrimary}
-                size="md"
-                _focus={{ borderColor: accent, boxShadow: 'none' }}
-              >
-                <option value="">选择分类（可选）</option>
-                {cats.map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </Select>
+              <Grid templateColumns={{ base: '1fr', sm: '2fr 3fr' }} gap={4}>
+                <Select
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  rounded="md"
+                  border="1px"
+                  borderColor={borderColor}
+                  bg={bgInput}
+                  color={textPrimary}
+                  size="md"
+                  _focus={{ borderColor: accent, boxShadow: 'none' }}
+                >
+                  <option value="">选择分类（可选）</option>
+                  {cats.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </Select>
 
-              <TagInput value={tags} onChange={setTags} accent={accent} borderColor={borderColor} bgInput={bgInput} textPrimary={textPrimary} textSecondary={textSecondary} />
+                <TagInput value={tags} onChange={setTags} accent={accent} borderColor={borderColor} bgInput={bgInput} textPrimary={textPrimary} textSecondary={textSecondary} />
+              </Grid>
+              <TagChips value={tags} onChange={setTags} accent={accent} textSecondary={textSecondary} />
             </Stack>
           </Box>
 
@@ -208,72 +213,6 @@ export default function NewTopic() {
           </Flex>
         </Stack>
       </Box>
-    </Box>
-  );
-}
-
-// 标签输入：回车/逗号添加为 chip，可点击删除
-function TagInput({ value, onChange, accent, borderColor, bgInput, textPrimary, textSecondary }: any) {
-  const [draft, setDraft] = useState('');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-
-  useEffect(() => {
-    api.listTags().then((arr: any) => setSuggestions(Array.isArray(arr) ? arr : [])).catch(() => {});
-  }, []);
-
-  const commit = (name: string) => {
-    const n = name.trim().replace(/^#/, '');
-    if (!n) return;
-    if (!value.some((t: string) => t.toLowerCase() === n.toLowerCase()) && value.length < 8) {
-      onChange([...value, n]);
-    }
-    setDraft('');
-  };
-
-  const addSuggestions = draft
-    ? suggestions.filter((s) => s.name.includes(draft.toLowerCase()) && !value.includes(s.name)).slice(0, 5)
-    : [];
-
-  return (
-    <Box>
-      <Flex flexWrap="wrap" gap={2} align="center" minH="40px" p={2} rounded="md" border="1px" borderColor={borderColor} bg={bgInput}>
-        {value.map((t: string) => (
-          <Flex key={t} align="center" gap={1} px={2} py={0.5} rounded="md" bg={accent + '1a'} color={textSecondary} fontSize="sm">
-            <Text fontWeight="600">#{t}</Text>
-            <Box as="button" onClick={() => onChange(value.filter((x: string) => x !== t))} aria-label={`移除标签 ${t}`} color={textSecondary}>
-              <Icon as={FiX} boxSize={3} />
-            </Box>
-          </Flex>
-        ))}
-        <Box flex={1}>
-          <Input
-            variant="unstyled"
-            placeholder={value.length ? '添加更多标签…' : '添加标签，回车确认'}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e: any) => {
-              if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
-                e.preventDefault();
-                commit(draft);
-              } else if (e.key === 'Backspace' && !draft && value.length) {
-                onChange(value.slice(0, -1));
-              }
-            }}
-            color={textPrimary}
-            fontSize="sm"
-            _placeholder={{ color: textSecondary }}
-          />
-        </Box>
-      </Flex>
-      {addSuggestions.length > 0 && (
-        <Flex flexWrap="wrap" gap={2} mt={2}>
-          {addSuggestions.map((s: any) => (
-            <Box key={s.id} as="button" onClick={() => { commit(s.name); }} bg="transparent" border="1px" borderColor={borderColor} color={textSecondary} px={2} py={0.5} rounded="md" fontSize="xs" _hover={{ bg: accent + '1a', color: textPrimary }}>
-              #{s.name} · {s.topics_count}
-            </Box>
-          ))}
-        </Flex>
-      )}
     </Box>
   );
 }
