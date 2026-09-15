@@ -1,20 +1,40 @@
-import { create } from 'zustand';
+import m from 'mithril';
 
-const initial = JSON.parse(localStorage.getItem('user') || 'null');
+const KEY_U = 'user';
+const KEY_T = 'token';
 
-export const useStore = create((set) => ({
-  user: initial,
-  token: localStorage.getItem('token') || null,
-  setUser: (user, token) => {
-    localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('token', token);
-    set({ user, token });
+function loadUser(): any {
+  try {
+    return JSON.parse(localStorage.getItem(KEY_U) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+export const store = {
+  user: loadUser(),
+  token: localStorage.getItem(KEY_T) || null,
+  headerTitle: null as string | null,
+
+  setUser(user: any, token: string) {
+    this.user = user;
+    this.token = token;
+    localStorage.setItem(KEY_U, JSON.stringify(user));
+    localStorage.setItem(KEY_T, token);
+    m.redraw();
   },
-  logout: () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    set({ user: null, token: null });
+
+  setHeaderTitle(t: string | null) {
+    this.headerTitle = t;
+    m.redraw();
   },
-  headerTitle: null,          // 话题页滚动时，贴在 Header 内侧显示的话题标题
-  setHeaderTitle: (t) => set({ headerTitle: t }),
-}));
+
+  logout() {
+    this.user = null;
+    this.token = null;
+    this.headerTitle = null;
+    localStorage.removeItem(KEY_U);
+    localStorage.removeItem(KEY_T);
+    m.redraw();
+  },
+};

@@ -49,7 +49,7 @@ SQLite 存储（无需 CGO）；前端使用 React + Chakra UI，支持 Markdown
 
 **其他**
 
-11. Markdown 编辑器（`@uiw/react-md-editor`），支持单回车换行（`remark-breaks`）与代码高亮。
+11. 内置 Markdown 编辑器：`<textarea>` + 实时预览，渲染使用 `marked`（开启 `breaks` 实现单回车换行）+ `highlight.js` 代码高亮。
 12. 内置演示数据：首次启动自动创建管理员、分类以及带标签的示例话题。
 13. 附带 `import-so` 命令行工具，可从 StackOverflow CSV 批量导入问答数据。
 
@@ -61,9 +61,9 @@ SQLite 存储（无需 CGO）；前端使用 React + Chakra UI，支持 Markdown
 | ORM / 数据 | [goent](https://github.com/azhai/goent)、SQLite（`modernc.org/sqlite`，纯 Go） |
 | 认证 | `golang-jwt/jwt/v5` + `bcrypt` 密码哈希 |
 | 配置 | [gobus/environ](https://github.com/azhai/gobus)（`.env` 加载） |
-| 前端 | React 18、React Router 6、Zustand 状态管理 |
-| UI | Chakra UI、React Icons、Framer Motion |
-| Markdown | `@uiw/react-md-editor`、`react-markdown`、`remark-gfm`、`refractor` 高亮 |
+| 前端 | Mithril.js、`m.route` 路由、模块级 store（mithril `m.redraw()`） |
+| UI | Construct UI（Mithril 组件库，基于 Blueprint 风格）、自绘组件 + 品牌水粉主题 |
+| Markdown | `marked`（开启 `breaks` + `gfm`）+ `highlight.js` 代码高亮 |
 | 构建 | Go `go build`（CGO 关闭）、Vite 5 |
 
 ## 项目结构
@@ -79,7 +79,7 @@ flock/
 ├── helpers/             # 通用辅助函数（如 slugify）
 ├── cmd/
 │   └── import-so/       # 从 StackOverflow CSV 导入数据的小工具
-├── web/                 # 前端工程（React + Vite）
+├── web/                 # 前端工程（Mithril.js + Vite）
 │   ├── src/
 │   │   ├── pages/       # 页面：首页、话题详情、发帖、登录注册、个人主页、后台
 │   │   ├── components/  # 组件：头部、侧栏、分页、代码块、标签输入
