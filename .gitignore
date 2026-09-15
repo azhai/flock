@@ -41,7 +41,8 @@ repos/
 uploads/
 
 # IDE
-.arts/
+.codearts/
+.codebuddy/
 .idea/
 .trae/
 .vscode/
