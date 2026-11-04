@@ -1,0 +1,27 @@
+<aside class="sidebar-col" aria-label="分类与标签">
+  <div class="sidebar" x-data="sidebar()">
+    <p class="side-label">分类</p>
+    <button type="button" class="cat-item" :class="{ active: !activeCat && !activeTag }" @click="selectCat('')">
+      <svg class="icon"><use href="#i-message" /></svg><span>全部</span>
+    </button>
+    <template x-for="c in cats" :key="c.id">
+      <button type="button" class="cat-item" :class="{ active: activeCat === c.slug }" @click="selectCat(c.slug)">
+        <span class="cat-dot" :style="dot(c.color)"></span><span x-text="c.name"></span>
+      </button>
+    </template>
+
+    <template x-if="tags.length">
+      <div>
+        <p class="side-label mt">热门标签</p>
+        <div class="tag-cloud">
+          <template x-for="tg in tags.slice(0, 12)" :key="tg.id">
+            <button type="button" class="tag-pill" :class="{ active: activeTag === tg.slug }"
+                    @click="selectTag(activeTag === tg.slug ? '' : tg.slug)">
+              <span x-text="'#' + tg.name"></span><small x-text="'· ' + tg.topics_count"></small>
+            </button>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
+</aside>

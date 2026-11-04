@@ -1,7 +1,7 @@
 # ADR 0002: 前端拆包 + 改用 md-editor/nohighlight
 
 ## Status
-Accepted
+Superseded by ADR 0004（前端已迁至 Alpine.js，React 生态拆包策略整体作废）
 
 ## Context
 - 打包产物是单个 `index-*.js`，minify 后 1.6MB / gzip 562K，加载负担过大。

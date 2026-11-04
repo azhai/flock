@@ -1,0 +1,45 @@
+<div class="narrow-page" x-data="newTopic()">
+  <template x-if="!$store.session.logged">
+    <div class="empty-state card">
+      <svg class="icon big"><use href="#i-edit" /></svg>
+      <b>登录后即可发帖</b>
+      <span>发表话题需要先登录账号</span>
+      <a class="btn primary" href="/login?from=/new">去登录</a>
+    </div>
+  </template>
+
+  <template x-if="$store.session.logged">
+    <div>
+      <h1 class="page-title">发布新话题</h1>
+      <p class="subtle">内容支持 Markdown 语法，可为话题添加标签</p>
+
+      <div class="card form-card">
+        <label class="field"><span>标题</span>
+          <input type="text" x-model="title" placeholder="标题：一句话说清你的话题" aria-label="话题标题" />
+        </label>
+        <div class="form-grid">
+          <label class="field"><span>分类</span>
+            <select x-model="categoryId" aria-label="分类">
+              <option value="">选择分类（可选）</option>
+              <template x-for="c in cats" :key="c.id">
+                <option :value="c.id" x-text="c.name"></option>
+              </template>
+            </select>
+          </label>
+          <div class="field"><span>标签</span>
+            <!-- @include tag-input {"field":"tags","setter":"setTags"} -->
+          </div>
+        </div>
+      </div>
+
+      <!-- @include editor {"field":"raw","placeholder":"正文内容…支持 **粗体**、*斜体*、`代码`、列表、引用等 Markdown 语法"} -->
+
+      <div class="form-actions">
+        <span class="muted" x-text="raw.length + ' 字'"></span>
+        <button type="button" class="btn ghost" @click="$router.back()">取消</button>
+        <button type="button" class="btn primary" :disabled="submitting" @click="submit()"
+                x-text="submitting ? '发布中…' : '发布话题'"></button>
+      </div>
+    </div>
+  </template>
+</div>

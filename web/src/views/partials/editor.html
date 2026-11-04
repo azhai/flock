@@ -1,0 +1,25 @@
+<div class="md-editor">
+  <div class="md-toolbar">
+    <button type="button" title="标题" @click="toolbar('heading')">H</button>
+    <button type="button" title="粗体" @click="toolbar('bold')"><b>B</b></button>
+    <button type="button" title="斜体" @click="toolbar('italic')"><i>I</i></button>
+    <button type="button" title="链接" @click="toolbar('link')">🔗</button>
+    <button type="button" title="行内代码" @click="toolbar('code')">&lt;/&gt;</button>
+    <button type="button" title="代码块" @click="toolbar('codeblock')">{ }</button>
+    <button type="button" title="引用" @click="toolbar('quote')">❞</button>
+    <button type="button" title="列表" @click="toolbar('list')">☰</button>
+    <button type="button" title="表情" @click="showEmoji = !showEmoji">☺</button>
+    <button type="button" class="ml-auto" @click="preview = !preview" x-text="preview ? '编辑' : '预览'"></button>
+  </div>
+
+  <div class="emoji-grid" x-show="showEmoji" x-transition.opacity>
+    <template x-for="e in emojis" :key="e">
+      <button type="button" @click="addEmoji(e)" x-text="e"></button>
+    </template>
+  </div>
+
+  <textarea x-ref="mdTextarea" x-model="{{field}}" x-show="!preview"
+            placeholder="{{placeholder}}" aria-label="Markdown 正文"></textarea>
+  <div class="markdown-content md-preview" x-show="preview" x-markdown="{{field}}"></div>
+  <div class="md-footer"><span x-text="{{field}}.length + ' 字 · 单回车自动换行'"></span></div>
+</div>

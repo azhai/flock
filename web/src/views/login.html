@@ -1,0 +1,17 @@
+<div class="auth-wrap" x-data="login()">
+  <div class="auth-card">
+    <div class="auth-brand"><span class="auth-logo">F</span><b>Flock</b></div>
+    <h1>欢迎回来</h1>
+    <p class="subtle">登录你的账号，开始交流分享</p>
+    <form @submit.prevent="submit()">
+      <label class="field"><span>用户名或邮箱</span>
+        <input type="text" x-model="username" autocomplete="username" required placeholder="用户名或邮箱" />
+      </label>
+      <label class="field"><span>密码</span>
+        <input type="password" x-model="password" autocomplete="current-password" required placeholder="密码" />
+      </label>
+      <button class="btn primary block" type="submit" :disabled="submitting" x-text="submitting ? '登录中…' : '登录'"></button>
+    </form>
+    <p class="auth-foot">还没有账号？<a href="/register">立即注册</a></p>
+  </div>
+</div>

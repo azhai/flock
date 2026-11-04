@@ -187,7 +187,7 @@ func seedDemo() {
 			title: "用 Go 写一个极简论坛的心得",
 			cat:   "tech",
 			tags:  []string{"Go", "后端", "开发"},
-			body:  "最近用 Go 的 Echo + goent 写了个极简论坛，分享几点体会。\n\n## 目录\n\n先交代一下整体结构：\n\n- 前后端分离，前端是 React + Chakra UI\n- 后端用 Echo 提供 RESTful API\n- 数据层用 goent 做了轻量 ORM\n\n## 遇到的坑\n\n1. 单回车换行需要特殊的解析\n2. 标签的热门排序要基于话题计数\n\n这些问题都在社区里找到了答案，值得记录下来。\n\n> 感谢大家的讨论……",
+			body:  "最近用 Go 的 Echo + goent 写了个极简论坛，分享几点体会。\n\n## 目录\n\n先交代一下整体结构：\n\n- 前后端分离，前端是 Alpine.js + 原生 CSS\n- 后端用 Echo 提供 RESTful API\n- 数据层用 goent 做了轻量 ORM\n\n## 遇到的坑\n\n1. 单回车换行需要特殊的解析\n2. 标签的热门排序要基于话题计数\n\n这些问题都在社区里找到了答案，值得记录下来。\n\n> 感谢大家的讨论……",
 			reply: "学习了，请问 goent 相比 GORM 上手成本如何？",
 		},
 		{
@@ -198,9 +198,9 @@ func seedDemo() {
 			reply: "",
 		},
 		{
-			title: "React 状态管理与 URL 参数同步",
+			title: "前端状态管理与 URL 参数同步",
 			cat:   "tech",
-			tags:  []string{"React", "前端", "状态管理"},
+			tags:  []string{"前端", "状态管理", "路由"},
 			body:  "让分类和标签的选中状态跟随 URL，刷新后不丢失。\n\n## 做法\n\n用 useSearchParams 读取 cat/tag，选中项回写回 URL。\n\n这样无论是首页还是话题详情，左侧栏都保持一致。",
 			reply: "这个方法很实用，学到了。",
 		},

@@ -1,7 +1,7 @@
 # ADR 0001: flock 核心架构与数据模型
 
 ## Status
-Accepted
+Accepted（前端技术栈部分已由 ADR 0004「Alpine.js 3」取代；其余架构决策仍有效）
 
 ## Context
 用 Go 从零实现一个论坛（主参考 Discourse），需可单二进制部署（前端静态资源 embed）。

@@ -1,0 +1,20 @@
+<div class="auth-wrap" x-data="register()">
+  <div class="auth-card">
+    <div class="auth-brand"><span class="auth-logo">F</span><b>Flock</b></div>
+    <h1>创建账号</h1>
+    <p class="subtle">加入我们，开始交流分享</p>
+    <form @submit.prevent="submit()">
+      <label class="field"><span>用户名</span>
+        <input type="text" x-model="username" autocomplete="username" required placeholder="用户名（3-32 字符）" />
+      </label>
+      <label class="field"><span>邮箱</span>
+        <input type="email" x-model="email" autocomplete="email" required placeholder="邮箱" />
+      </label>
+      <label class="field"><span>密码</span>
+        <input type="password" x-model="password" autocomplete="new-password" required placeholder="密码（至少 6 位）" />
+      </label>
+      <button class="btn primary block" type="submit" :disabled="submitting" x-text="submitting ? '注册中…' : '注册'"></button>
+    </form>
+    <p class="auth-foot">已有账号？<a href="/login">立即登录</a></p>
+  </div>
+</div>

@@ -1,0 +1,30 @@
+<div class="narrow-page" x-data="profile()">
+  <template x-if="!user">
+    <div class="skeleton-list"><div class="skeleton-row block"></div><div class="skeleton-row block"></div></div>
+  </template>
+
+  <template x-if="user">
+    <div>
+      <div class="card profile-card">
+        <span class="avatar lg" x-text="initial(user.username)"></span>
+        <div>
+          <h1 x-text="user.username"></h1>
+          <p class="subtle" x-text="user.full_name || ''"></p>
+          <p x-text="user.bio || ''"></p>
+          <p class="muted" x-text="(user.topics_count || 0) + ' 话题 · ' + (user.posts_count || 0) + ' 帖子 · ' + levelOf(user).name"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">TA 的话题</h2>
+        <template x-if="!topics.length"><p class="empty-tip">暂无话题</p></template>
+        <template x-for="t in topics" :key="t.id">
+          <a class="profile-topic" :href="'/topics/' + t.id">
+            <b x-text="t.title"></b>
+            <small class="muted" x-text="(t.posts_count || 0) + ' 回复 · ' + formatDate(t.created_at)"></small>
+          </a>
+        </template>
+      </div>
+    </div>
+  </template>
+</div>

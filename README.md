@@ -1,8 +1,8 @@
 # Flock · 极简论坛
 
-Flock 是一个用 Go + React 构建的轻量级论坛系统，采用前后端分离架构。
+Flock 是一个用 Go + Alpine.js 构建的轻量级论坛系统，采用前后端分离架构。
 后端基于 Echo 提供 RESTful API，数据层使用 goent 做轻量 ORM，默认使用纯 Go 的
-SQLite 存储（无需 CGO）；前端使用 React + Chakra UI，支持 Markdown 编辑与渲染。
+SQLite 存储（无需 CGO）；前端使用 Alpine.js 3 + 原生 CSS，支持 Markdown 编辑与渲染。
 
 它借鉴了 Discourse 的「话题 + 首帖」模型：一个话题（Topic）由若干帖子（Post）组成，
 首帖（`PostNumber=1`）即楼主正文，后续楼层为回复。整体界面为柔和的「水粉画」风格，
@@ -49,7 +49,7 @@ SQLite 存储（无需 CGO）；前端使用 React + Chakra UI，支持 Markdown
 
 **其他**
 
-11. Markdown 编辑器（`@uiw/react-md-editor`），支持单回车换行（`remark-breaks`）与代码高亮。
+11. Markdown 编辑器（格式工具栏 + 实时预览），支持单回车换行、GFM 与 microlight 代码高亮；渲染前经 DOMPurify 消毒。
 12. 内置演示数据：首次启动自动创建管理员、分类以及带标签的示例话题。
 13. 附带 `import-so` 命令行工具，可从 StackOverflow CSV 批量导入问答数据。
 
@@ -61,10 +61,10 @@ SQLite 存储（无需 CGO）；前端使用 React + Chakra UI，支持 Markdown
 | ORM / 数据 | [goent](https://github.com/azhai/goent)、SQLite（`modernc.org/sqlite`，纯 Go） |
 | 认证 | `golang-jwt/jwt/v5` + `bcrypt` 密码哈希 |
 | 配置 | [gobus/environ](https://github.com/azhai/gobus)（`.env` 加载） |
-| 前端 | React 18、React Router 6、Zustand 状态管理 |
-| UI | Chakra UI、React Icons、Framer Motion |
-| Markdown | `@uiw/react-md-editor`、`react-markdown`、`remark-gfm`、`refractor` 高亮 |
-| 构建 | Go `go build`（CGO 关闭）、Vite 5 |
+| 前端 | [Alpine.js 3.17.5](https://alpinejs.dev/)、自建 History API 路由、`Alpine.store` 状态管理 |
+| UI | 原生 CSS（水粉画浅色主题）、内联 SVG 图标 |
+| Markdown | `marked`（GFM + breaks）、`DOMPurify` 消毒、`microlight` 代码高亮 |
+| 构建 | Go `go build`（CGO 关闭）、Vite 8 + pnpm |
 
 ## 项目结构
 
@@ -79,11 +79,14 @@ flock/
 ├── helpers/             # 通用辅助函数（如 slugify）
 ├── cmd/
 │   └── import-so/       # 从 StackOverflow CSV 导入数据的小工具
-├── web/                 # 前端工程（React + Vite）
+├── web/                 # 前端工程（Alpine.js + Vite）
+│   ├── index.html       # 外壳：Header、SVG 图标、Toast、#views 容器
 │   ├── src/
-│   │   ├── pages/       # 页面：首页、话题详情、发帖、登录注册、个人主页、后台
-│   │   ├── components/  # 组件：头部、侧栏、分页、代码块、标签输入
-│   │   └── lib/         # API 封装、状态管理、高亮等
+│   │   ├── main.js      # 入口：注册 store/data/指令、注入页面模板、启动 Alpine
+│   │   ├── core/        # API 封装、路由、状态、Markdown、工具函数
+│   │   ├── pages/       # 8 个页面的 Alpine.data 逻辑
+│   │   ├── views/       # 页面 HTML 模板 + partials（侧栏/分页/编辑器/标签）
+│   │   └── styles/      # app.css（全局样式 + Markdown 排版）
 │   └── vite.config.js   # 前端构建与开发代理配置
 ├── example.env          # 环境变量示例
 ├── Makefile             # 常用构建 / 运行 / 测试命令
@@ -93,7 +96,7 @@ flock/
 ## 环境要求
 
 - **Go 1.27+**（见 `go.mod`）
-- **Node.js 18+** 与 **npm**
+- **Node.js 20.19+（推荐 22）** 与 **pnpm**（Vite 8 要求）
 - 无需安装数据库，默认使用文件型 SQLite
 
 > **本地依赖说明**：`go.mod` 中通过 `replace` 指令将 `github.com/azhai/gobus`
@@ -130,7 +133,7 @@ ADMIN_EMAIL=admin@flock.local
 ### 2. 安装前端依赖
 
 ```bash
-cd web && npm install && cd ..
+cd web && pnpm install && cd ..
 ```
 
 ### 3. 一键启动（推荐）

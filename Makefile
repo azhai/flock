@@ -45,10 +45,10 @@ build: front
 	done
 	@echo "✅ Build success."
 
-## front: build frontend assets (tsc type-check + vite build)
+## front: build frontend assets (vite build, Alpine.js)
 front:
 	@echo "Build frontend ..."
-	cd $(ADMIN_DIR) && npm run build
+	cd $(ADMIN_DIR) && pnpm run build
 
 ## run: build frontend then run main with go run
 run: front
@@ -61,8 +61,8 @@ server: one
 ## dev: start hot-reload backend (air) + frontend dev server (vite)
 dev:
 	@which air > /dev/null 2>&1 || go install github.com/air-verse/air@latest
-	@if [ ! -d "$(ADMIN_DIR)/node_modules" ]; then cd $(ADMIN_DIR) && npm install; fi
-	(cd $(ADMIN_DIR) && npm run dev &)
+	@if [ ! -d "$(ADMIN_DIR)/node_modules" ]; then cd $(ADMIN_DIR) && pnpm install; fi
+	(cd $(ADMIN_DIR) && pnpm run dev &)
 	air
 
 ## mk: alias for dev (hot reload)

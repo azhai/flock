@@ -1,0 +1,136 @@
+<div class="admin-page" x-data="admin()">
+  <h1 class="page-title">管理后台</h1>
+
+  <div class="tabs admin-tabs">
+    <button type="button" class="tab" :class="{ active: tab === 'overview' }" @click="setTab('overview')">概览</button>
+    <button type="button" class="tab" :class="{ active: tab === 'categories' }" @click="setTab('categories')">分类</button>
+    <button type="button" class="tab" :class="{ active: tab === 'reports' }" @click="setTab('reports')">
+      举报 <span class="red-badge" x-show="stats?.reports > 0" x-text="stats?.reports"></span>
+    </button>
+    <button type="button" class="tab" :class="{ active: tab === 'topics' }" @click="setTab('topics')">话题</button>
+    <button type="button" class="tab" :class="{ active: tab === 'users' }" @click="setTab('users')">用户</button>
+  </div>
+
+  <!-- 概览 -->
+  <div x-show="tab === 'overview'">
+    <div class="stat-grid" x-show="stats">
+      <template x-for="s in statCards()" :key="s.label">
+        <button type="button" class="stat-card" @click="setTab(s.to)">
+          <b :style="'color:' + s.color" x-text="s.value"></b><span class="muted" x-text="s.label"></span>
+        </button>
+      </template>
+    </div>
+    <p class="empty-tip" x-show="!stats">加载中…</p>
+  </div>
+
+  <!-- 分类 -->
+  <div x-show="tab === 'categories'">
+    <div class="card form-card">
+      <h2 class="card-title">新建分类</h2>
+      <div class="inline-form">
+        <input type="text" x-model="newCat.name" placeholder="名称" aria-label="分类名称" />
+        <input type="text" x-model="newCat.slug" placeholder="slug（可留空）" aria-label="分类 slug" />
+        <input type="text" x-model="newCat.description" placeholder="描述" aria-label="分类描述" />
+        <button type="button" class="btn primary" @click="createCat()">创建</button>
+      </div>
+    </div>
+    <div class="admin-list">
+      <template x-for="c in cats" :key="c.id">
+        <div class="admin-row">
+          <span class="cat-dot" :style="dot(c.color)"></span>
+          <b x-text="c.name"></b><small class="muted" x-text="'/' + c.slug"></small>
+          <span class="flex1"></span>
+          <small class="muted" x-text="(c.topics_count || 0) + ' 话题'"></small>
+          <button type="button" class="icon-btn danger" title="删除分类" aria-label="删除分类" @click="delCat(c)">
+            <svg class="icon"><use href="#i-trash" /></svg>
+          </button>
+        </div>
+      </template>
+      <p class="empty-tip" x-show="!cats.length">暂无分类</p>
+    </div>
+  </div>
+
+  <!-- 举报流 -->
+  <div x-show="tab === 'reports'">
+    <select class="small-select" x-model="reportStatus" @change="loadReports()" aria-label="举报状态">
+      <option value="">全部</option><option value="pending">待处理</option>
+      <option value="resolved">已处理</option><option value="dismissed">已驳回</option>
+    </select>
+    <div class="admin-list">
+      <template x-for="r in reports" :key="r.id">
+        <div class="card report-card">
+          <div class="report-head">
+            <svg class="icon"><use href="#i-flag" /></svg>
+            <b x-text="(r.user?.username || '?') + ' 举报'"></b>
+            <small class="muted" x-text="'#' + (r.post?.post_number || '?') + ' 楼'"></small>
+            <span class="status-badge" :style="statusStyle(r.status)" x-text="statusLabel(r.status)"></span>
+            <span class="flex1"></span>
+            <small class="muted" x-text="localeTime(r.created_at)"></small>
+          </div>
+          <p class="report-reason" x-text="'理由：' + (r.reason || '')"></p>
+          <div class="markdown-content report-body" x-markdown="r.post?.raw || ''"></div>
+          <div class="row-actions" x-show="r.status === 'pending'">
+            <button type="button" class="btn primary small" @click="actReport(r, 'resolve')">处理（删除违规帖）</button>
+            <button type="button" class="btn outline small" @click="actReport(r, 'dismiss')">驳回</button>
+          </div>
+        </div>
+      </template>
+      <p class="empty-tip" x-show="!reports.length">暂无举报</p>
+    </div>
+  </div>
+
+  <!-- 话题 -->
+  <div x-show="tab === 'topics'">
+    <select class="small-select" x-model="topicHidden" @change="topicPage = 1; loadTopics()" aria-label="话题可见性">
+      <option value="">正常</option><option value="1">已隐藏</option><option value="all">全部</option>
+    </select>
+    <div class="admin-list">
+      <template x-for="t in topics" :key="t.id">
+        <div class="admin-row">
+          <span class="status-badge muted-badge" x-show="t.hidden">已隐藏</span>
+          <span class="flex1 minw0">
+            <a class="row-link" :href="'/topics/' + t.id" x-text="t.title"></a>
+            <small class="muted block" x-text="(t.user?.username || '?') + ' · ' + (t.reply_count || 0) + ' 回复 / ' + (t.views_count || 0) + ' 浏览'"></small>
+          </span>
+          <button type="button" class="icon-btn" :title="t.hidden ? '恢复显示' : '隐藏'" :aria-label="t.hidden ? '恢复显示' : '隐藏'" @click="toggleHide(t)">
+            <svg class="icon"><use :href="t.hidden ? '#i-eye' : '#i-eye-off'" /></svg>
+          </button>
+          <button type="button" class="icon-btn" :title="t.pinned ? '取消置顶' : '置顶'" :aria-label="t.pinned ? '取消置顶' : '置顶'" @click="togglePin(t)">
+            <svg class="icon"><use :href="t.pinned ? '#i-unlock' : '#i-star'" /></svg>
+          </button>
+          <button type="button" class="icon-btn" :title="t.closed ? '解锁' : '锁定'" :aria-label="t.closed ? '解锁' : '锁定'" @click="toggleClose(t)">
+            <svg class="icon"><use :href="t.closed ? '#i-message' : '#i-lock'" /></svg>
+          </button>
+          <button type="button" class="icon-btn danger" title="删除话题" aria-label="删除话题" @click="delTopic(t)">
+            <svg class="icon"><use href="#i-trash" /></svg>
+          </button>
+        </div>
+      </template>
+      <p class="empty-tip" x-show="!topics.length">暂无话题</p>
+    </div>
+    <!-- @include pagination -->
+  </div>
+
+  <!-- 用户 -->
+  <div x-show="tab === 'users'">
+    <input class="search-input" type="search" x-model="uq" @input.debounce.300ms="userPage = 1; loadUsers()" placeholder="搜索用户名 / 邮箱" aria-label="搜索用户" />
+    <div class="admin-list">
+      <template x-for="u in users" :key="u.id">
+        <div class="admin-row wrap">
+          <span class="flex1 minw0">
+            <b x-text="u.username"></b> <small class="muted" x-text="u.full_name || ''"></small>
+            <small class="muted block" x-text="u.email"></small>
+          </span>
+          <small class="muted" x-text="(u.topics_count || 0) + ' 话题 / ' + (u.posts_count || 0) + ' 回复 · Lv' + (u.level || 0) + ' ' + (u.level_name || '')"></small>
+          <select class="small-select" :value="u.role" @change="saveUser(u, { role: $event.target.value })" :aria-label="'修改 ' + u.username + ' 的角色'">
+            <option value="user">普通用户</option><option value="moderator">版主</option><option value="admin">管理员</option>
+          </select>
+          <button type="button" class="btn outline small" :class="{ 'danger-text': u.is_active }" @click="saveUser(u, { is_active: !u.is_active })"
+                  x-text="u.is_active ? '禁用' : '启用'"></button>
+        </div>
+      </template>
+      <p class="empty-tip" x-show="!users.length">暂无用户</p>
+    </div>
+    <!-- @include pagination -->
+  </div>
+</div>

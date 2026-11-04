@@ -1,0 +1,33 @@
+<div class="narrow-page" x-data="bookmarks()">
+  <h1 class="page-title">我的收藏</h1>
+  <p class="subtle" x-text="items ? items.length + ' 个话题' : '加载中…'"></p>
+
+  <div class="skeleton-list" x-show="!items">
+    <template x-for="i in 3" :key="i"><div class="skeleton-row block"></div></template>
+  </div>
+
+  <div class="empty-state card" x-show="items && !items.length">
+    <svg class="icon big"><use href="#i-bookmark" /></svg>
+    <b>还没有收藏</b>
+    <span>在话题页点击「收藏」即可加入这里</span>
+    <a class="btn primary" href="/">去逛逛</a>
+  </div>
+
+  <div class="card list-card" x-show="items && items.length">
+    <template x-for="t in items || []" :key="t.id">
+      <a class="bookmark-row" :href="'/topics/' + t.id">
+        <span class="flex1">
+          <span class="topic-line">
+            <template x-if="t.category"><span class="cat-badge" :style="badge(t.category.color)" x-text="t.category.name"></span></template>
+            <span class="topic-name" x-text="t.title"></span>
+          </span>
+          <span class="topic-meta">
+            <template x-for="tg in (t.tags || []).slice(0, 3)" :key="tg.id"><span class="tag-badge" x-text="'#' + tg.name"></span></template>
+            <span class="muted" x-text="(t.posts_count || 0) + ' 回复 · ' + (t.views_count || 0) + ' 浏览'"></span>
+          </span>
+        </span>
+        <svg class="icon"><use href="#i-chevron-right" /></svg>
+      </a>
+    </template>
+  </div>
+</div>

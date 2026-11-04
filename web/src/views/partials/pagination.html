@@ -1,0 +1,20 @@
+<div class="pagination" x-show="total > perPage">
+  <span class="page-summary">共 <b x-text="total"></b> 条 · 第 <b x-text="page"></b> / <b x-text="totalPages()"></b> 页</span>
+  <div class="page-btns">
+    <button type="button" aria-label="首页" :disabled="page <= 1" @click="goPage(1)">«</button>
+    <button type="button" aria-label="上一页" :disabled="page <= 1" @click="goPage(page - 1)">‹</button>
+    <template x-for="p in pageWindow()" :key="p.key">
+      <span class="page-slot">
+        <span class="ellipsis" x-show="p.ellipsis">…</span>
+        <button type="button" class="page-num" x-show="!p.ellipsis" :class="{ active: p.num === page }"
+                :aria-current="p.num === page ? 'page' : null" @click="goPage(p.num)" x-text="p.num"></button>
+      </span>
+    </template>
+    <button type="button" aria-label="下一页" :disabled="page >= totalPages()" @click="goPage(page + 1)">›</button>
+    <button type="button" aria-label="末页" :disabled="page >= totalPages()" @click="goPage(totalPages())">»</button>
+  </div>
+  <span class="page-jump">跳至
+    <input type="text" inputmode="numeric" x-model="jump" @keydown.enter="submitJump()" aria-label="跳转页数" />
+    <button type="button" @click="submitJump()">Go</button>
+  </span>
+</div>

@@ -1,0 +1,16 @@
+<div class="tag-input" x-data="tagInput(() => {{field}}, (v) => {{setter}}(v))">
+  <input type="text" x-model="draft" @keydown="onKey($event)"
+         :placeholder="value.length ? '添加标签…' : '添加标签，回车确认'" aria-label="添加标签" />
+  <div class="suggestions" x-show="matches.length">
+    <template x-for="s in matches" :key="s.id">
+      <button type="button" @click="commit(s.name)" x-text="'#' + s.name + ' · ' + s.topics_count"></button>
+    </template>
+  </div>
+  <div class="tag-chips" x-show="value.length">
+    <template x-for="t in value" :key="t">
+      <span class="tag-chip">#<span x-text="t"></span>
+        <button type="button" :aria-label="'移除标签 ' + t" @click="remove(t)">×</button>
+      </span>
+    </template>
+  </div>
+</div>

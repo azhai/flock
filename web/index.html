@@ -7,7 +7,135 @@
     <title>Flock - 极简论坛</title>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <!-- 静态图标 sprite：所有图标共用一组 Feather 路径，避免引入图标库 -->
+    <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></symbol>
+      <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></symbol>
+      <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5M21 12H9" /></symbol>
+      <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></symbol>
+      <symbol id="i-at" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.9 7.9" /></symbol>
+      <symbol id="i-thumb" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.3a2 2 0 0 0 2-1.7l1.4-9A2 2 0 0 0 19.7 9H14z" /><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><path d="M4 22v-7" /></symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5M9 10.8V3h6v7.8l2 2.2H7l2-2.2z" /></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol>
+      <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></symbol>
+      <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" /></symbol>
+      <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" /></symbol>
+      <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7" /></symbol>
+      <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" /></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M17.9 17.9A10.9 10.9 0 0 1 12 20C5 20 1 12 1 12a19 19 0 0 1 5.1-5.9M9.9 4.2A10.9 10.9 0 0 1 12 4c7 0 11 8 11 8a19 19 0 0 1-2.2 3.2M1 1l22 22" /></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></symbol>
+      <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4L12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z" /><circle cx="7.5" cy="7.5" r="1.5" /></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.2-6.2 3.2L7 14.2l-5-4.9 6.9-1L12 2z" /></symbol>
+    </svg>
+
+    <div id="app" x-data x-cloak>
+      <header class="site-header" x-data="siteHeader()">
+        <div class="header-inner">
+          <a class="brand" href="/" aria-label="Flock 首页">
+            <img src="/logo-forest.svg" alt="" />
+            <span>Flock</span>
+          </a>
+
+          <template x-if="$store.ui.headerTitle">
+            <div class="header-title">
+              <span class="header-sep"></span>
+              <span x-text="$store.ui.headerTitle"></span>
+            </div>
+          </template>
+
+          <div class="header-spacer"></div>
+
+          <div class="search-box">
+            <svg class="icon"><use href="#i-search" /></svg>
+            <input type="search" x-model="q" @keydown.enter="submitSearch()" placeholder="搜索" aria-label="搜索" />
+          </div>
+
+          <template x-if="!$store.session.logged">
+            <div class="header-actions">
+              <a class="btn ghost" href="/login">登录</a>
+              <a class="btn primary" href="/register">注册</a>
+            </div>
+          </template>
+
+          <template x-if="$store.session.logged">
+            <div class="header-actions">
+              <a class="btn primary" href="/new"><svg class="icon"><use href="#i-plus" /></svg>新话题</a>
+
+              <div class="dropdown" @click.outside="notifOpen = false">
+                <button class="icon-btn" type="button" aria-label="通知" :aria-expanded="notifOpen"
+                        @click="notifOpen = !notifOpen; userOpen = false">
+                  <svg class="icon"><use href="#i-bell" /></svg>
+                  <span class="unread-badge" x-show="unread > 0" x-text="unread > 99 ? '99+' : unread"></span>
+                </button>
+                <div class="dropdown-panel notif-panel" x-show="notifOpen" x-transition.opacity>
+                  <div class="notif-head">
+                    <strong>通知</strong>
+                    <button type="button" class="link-btn" x-show="unread > 0" @click="markAll()">全部已读</button>
+                  </div>
+                  <template x-if="notifs.length === 0">
+                    <p class="empty-tip">暂无通知</p>
+                  </template>
+                  <template x-for="n in notifs.slice(0, 20)" :key="n.id">
+                    <button type="button" class="notif-item" :class="{ unread: !n.read }" @click="openNotif(n)">
+                      <span class="notif-icon" :style="'color:' + meta(n.type).color">
+                        <svg class="icon"><use :href="'#i-' + meta(n.type).icon" /></svg>
+                      </span>
+                      <span class="notif-body">
+                        <b x-text="n.content || meta(n.type).label"></b>
+                        <small x-text="(n.actor?.username || '系统') + ' ' + meta(n.type).label + ' · ' + timeAgo(n.created_at)"></small>
+                      </span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+
+              <div class="dropdown" @click.outside="userOpen = false">
+                <button class="avatar-btn" type="button" aria-label="用户菜单" :aria-expanded="userOpen"
+                        @click="userOpen = !userOpen; notifOpen = false">
+                  <span class="avatar" x-text="initial($store.session.user?.username)"></span>
+                </button>
+                <div class="dropdown-panel user-panel" x-show="userOpen" x-transition.opacity>
+                  <a class="menu-item" :href="'/u/' + $store.session.user?.username" @click="userOpen = false">
+                    <svg class="icon"><use href="#i-user" /></svg>
+                    <b x-text="$store.session.user?.username"></b>
+                  </a>
+                  <a class="menu-item" href="/bookmarks" @click="userOpen = false">
+                    <svg class="icon"><use href="#i-bookmark" /></svg>我的收藏
+                  </a>
+                  <template x-if="$store.session.user?.role === 'admin'">
+                    <a class="menu-item" href="/admin" @click="userOpen = false">
+                      <svg class="icon"><use href="#i-shield" /></svg>管理后台
+                    </a>
+                  </template>
+                  <button class="menu-item danger" type="button" @click="logout()">
+                    <svg class="icon"><use href="#i-logout" /></svg>退出
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </header>
+
+      <div id="views"></div>
+
+      <div class="toast-host" aria-live="polite">
+        <template x-for="t in $store.ui.toasts" :key="t.id">
+          <div class="toast" :class="'toast-' + t.status" x-text="t.message"></div>
+        </template>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>

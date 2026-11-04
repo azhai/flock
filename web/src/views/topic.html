@@ -1,0 +1,195 @@
+<div class="layout topic-layout" x-data="topic()"
+     @post-delete="removePost($event.detail.id)" @post-report="openReport($event.detail.post)">
+  <!-- @include sidebar -->
+
+  <section class="topic-main-col">
+    <!-- 移动端：分类 / 作者 / 操作（桌面端这些信息在右侧栏） -->
+    <div class="mobile-topic-head" x-show="topic">
+      <div class="badge-row">
+        <span class="status-badge pinned" x-show="topic?.pinned">置顶</span>
+        <span class="status-badge closed" x-show="topic?.closed">已锁定</span>
+        <template x-if="topic?.category"><span class="cat-badge" :style="badge(topic.category.color)" x-text="topic.category.name"></span></template>
+        <template x-for="tg in topic?.tags || []" :key="tg.id">
+          <a class="tag-badge" :href="'/?tag=' + encodeURIComponent(tg.slug)" x-text="'#' + tg.name"></a>
+        </template>
+      </div>
+      <div class="mobile-meta">
+        <span class="muted" x-text="(topic?.user?.username || '') + ' · ' + formatDate(topic?.created_at) + ' · ' + (topic?.views_count || 0) + ' 浏览 · ' + (topic?.posts_count || 0) + ' 回复'"></span>
+        <span class="row-actions">
+          <button type="button" class="link-btn" x-text="topic?.bookmarked ? '已收藏' : '收藏'" @click="toggleBookmark()"></button>
+          <button type="button" class="link-btn" x-text="topic?.followed ? '已关注' : '关注'" @click="toggleFollow()"></button>
+        </span>
+      </div>
+    </div>
+
+    <div class="post-scroll no-scrollbar" x-ref="scroller" @scroll="onScroll()" tabindex="-1">
+      <h1 class="topic-heading" x-text="topic?.title || ''"></h1>
+
+      <template x-for="p in posts" :key="p.id">
+        <div class="post" :id="'post-' + p.id" :data-post-id="p.id" x-data="postRow(p)" :class="{ op: p.post_number === 1 }">
+          <template x-if="p.post_number !== 1">
+            <div class="post-head">
+              <span class="avatar md" x-text="initial(p.user?.username)"></span>
+              <span class="post-author">
+                <b x-text="p.user?.username || '?'"></b>
+                <span class="level-badge" :style="levelStyle(p.user)" x-text="levelOf(p.user).name"></span>
+                <span class="role-badge" x-show="p.user?.role === 'admin'">管理员</span>
+                <small class="muted" x-text="'#' + p.post_number + ' · ' + formatDateTime(p.created_at)"></small>
+              </span>
+            </div>
+          </template>
+
+          <div class="post-body">
+            <div class="markdown-content" x-show="!editing" x-markdown="p.raw"></div>
+            <div class="post-edit" x-show="editing">
+              <textarea x-model="draft" rows="8" aria-label="编辑帖子内容"></textarea>
+              <div class="row-actions end">
+                <button type="button" class="btn ghost small" @click="editing = false">取消</button>
+                <button type="button" class="btn primary small" @click="save()">保存</button>
+              </div>
+            </div>
+            <div class="post-actions" x-show="!editing">
+              <span class="vote-box">
+                <button type="button" :class="{ active: p.my_vote === 1 }" aria-label="顶" @click="vote(1)">↑</button>
+                <b :class="{ up: p.like_count > 0, down: p.like_count < 0 }" x-text="p.like_count || 0"></b>
+                <button type="button" :class="{ active: p.my_vote === -1 }" aria-label="踩" @click="vote(-1)">↓</button>
+              </span>
+              <template x-if="!canEdit && !isOp"><button type="button" class="link-btn" @click="report()">举报</button></template>
+              <template x-if="canEdit"><button type="button" class="link-btn" @click="startEdit()">编辑</button></template>
+              <template x-if="canEdit"><button type="button" class="link-btn danger-text" @click="remove()">删除</button></template>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- 钓鱼线刻度式滚动条放在滚动容器外，才能在滚动时保持固定 -->
+    <div class="fishing-rail" x-ref="rail"
+         @pointerdown="railDown($event)" @pointermove="railMove($event)"
+         @pointerup="railUp()" @pointercancel="railUp()" @wheel.prevent="railWheel($event)">
+      <span class="rail-line"></span>
+      <template x-for="(p, i) in posts" :key="'node-' + p.id">
+        <span class="rail-node" x-show="i > 0" :class="{ active: activePostId === p.id }"
+              :style="'top:' + (nodeTops[i] || 0) + '%'"
+              :title="p.post_number === 1 ? '主贴' : '回复 #' + p.post_number"
+              @pointerdown.stop @click="jumpTo(p.id)"></span>
+      </template>
+      <span class="rail-thumb" :style="'height:' + thumbHeight + 'px;top:' + thumbTop + 'px'"></span>
+    </div>
+    <span class="rail-label" x-text="activeLabel"></span>
+
+    <div class="reply-box">
+      <p class="locked" x-show="topic?.closed">话题已锁定，无法回复</p>
+      <div x-show="topic && !topic.closed">
+        <!-- @include editor {"field":"reply","placeholder":"写下你的回复…（支持 Markdown，单回车自动换行）"} -->
+        <div class="row-actions end">
+          <button type="button" class="btn primary" @click="submitReply()" :disabled="submitting">
+            <svg class="icon"><use href="#i-send" /></svg>回复
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="topic-aside" x-show="topic">
+    <button type="button" class="btn ghost small back-btn" @click="toBack()">
+      <svg class="icon"><use href="#i-arrow-left" /></svg>返回
+    </button>
+
+    <div class="aside-block">
+      <span class="status-badge pinned" x-show="topic?.pinned">置顶</span>
+      <span class="status-badge closed" x-show="topic?.closed">已锁定</span>
+      <span class="cat-badge" :style="badge(topic?.category?.color)" x-text="topic?.category?.name || '未分类'"></span>
+    </div>
+
+    <div class="aside-block tag-row">
+      <svg class="icon"><use href="#i-tag" /></svg>
+      <template x-for="tg in topic?.tags || []" :key="tg.id">
+        <a class="tag-badge" :href="'/?tag=' + encodeURIComponent(tg.slug)" x-text="'#' + tg.name"></a>
+      </template>
+      <span class="muted" x-show="!(topic?.tags || []).length">暂无标签</span>
+    </div>
+
+    <div class="aside-block author-block">
+      <span class="avatar lg" x-text="initial(topic?.user?.username)"></span>
+      <span>
+        <span class="author-line">
+          <b x-text="topic?.user?.username || '?'"></b>
+          <span class="level-badge" :style="levelStyle(topic?.user)" x-text="levelOf(topic?.user).name"></span>
+        </span>
+        <small class="muted block" x-text="formatDate(topic?.created_at)"></small>
+        <small class="muted" x-text="(topic?.views_count || 0) + ' 浏览 · ' + (topic?.posts_count || 0) + ' 回复'"></small>
+      </span>
+    </div>
+
+    <div class="aside-block" x-show="canEditTopic">
+      <button type="button" class="btn ghost small" @click="openEdit()">
+        <svg class="icon"><use href="#i-edit" /></svg>更改
+      </button>
+      <button type="button" class="btn ghost small" :class="{ 'danger-text': !topic?.hidden }" @click="toggleHide()"
+              x-text="topic?.hidden ? '显示' : '隐藏'"></button>
+    </div>
+
+    <div class="aside-block icon-row">
+      <button type="button" class="icon-btn" :class="{ 'accent-text': topic?.bookmarked }" title="收藏" aria-label="收藏" @click="toggleBookmark()">
+        <svg class="icon"><use href="#i-bookmark" /></svg>
+      </button>
+      <button type="button" class="icon-btn" :class="{ 'accent-text': topic?.followed }" title="关注" aria-label="关注" @click="toggleFollow()">
+        <svg class="icon"><use href="#i-bell" /></svg>
+      </button>
+      <template x-if="canEditTopic">
+        <span>
+          <button type="button" class="icon-btn" :title="topic?.pinned ? '取消置顶' : '置顶'" :aria-label="topic?.pinned ? '取消置顶' : '置顶'" @click="togglePin()">
+            <svg class="icon"><use href="#i-flag" /></svg>
+          </button>
+          <button type="button" class="icon-btn" :title="topic?.closed ? '解锁' : '锁定'" :aria-label="topic?.closed ? '解锁' : '锁定'" @click="toggleClose()">
+            <svg class="icon"><use :href="topic?.closed ? '#i-message' : '#i-lock'" /></svg>
+          </button>
+        </span>
+      </template>
+    </div>
+  </aside>
+
+  <!-- 举报对话框 -->
+  <div class="modal-overlay" x-show="reportOpen" @click.self="reportOpen = false" x-transition.opacity>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="举报这条回复">
+      <div class="modal-head"><b>举报这条回复</b>
+        <button type="button" class="icon-btn" aria-label="关闭" @click="reportOpen = false"><svg class="icon"><use href="#i-x" /></svg></button>
+      </div>
+      <div class="modal-body">
+        <textarea x-model="reportReason" rows="3" placeholder="请简要说明举报理由（垃圾信息 / 引战 / 不友善 …）" aria-label="举报理由"></textarea>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn ghost small" @click="reportOpen = false">取消</button>
+        <button type="button" class="btn danger small" :disabled="!reportReason.trim()" @click="submitReport()">提交举报</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑话题对话框 -->
+  <div class="modal-overlay" x-show="editOpen" @click.self="editOpen = false" x-transition.opacity>
+    <div class="modal wide" role="dialog" aria-modal="true" aria-label="编辑话题">
+      <div class="modal-head"><b>编辑话题</b>
+        <button type="button" class="icon-btn" aria-label="关闭" @click="editOpen = false"><svg class="icon"><use href="#i-x" /></svg></button>
+      </div>
+      <div class="modal-body">
+        <label class="field"><span>标题</span><input type="text" x-model="eTitle" aria-label="话题标题" /></label>
+        <div class="form-grid">
+          <label class="field"><span>分类</span>
+            <select x-model="eCat" aria-label="分类">
+              <option value="">选择分类（可选）</option>
+              <template x-for="c in cats" :key="c.id"><option :value="c.id" x-text="c.name"></option></template>
+            </select>
+          </label>
+          <div class="field"><span>标签</span>
+            <!-- @include tag-input {"field":"eTags","setter":"setETags"} -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn ghost small" @click="editOpen = false">取消</button>
+        <button type="button" class="btn primary small" :disabled="!eTitle.trim()" @click="saveEdit()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>

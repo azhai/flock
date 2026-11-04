@@ -1,0 +1,59 @@
+<div class="layout with-sidebar" x-data="home()">
+  <!-- @include sidebar -->
+  <section class="main-col">
+    <h1 class="page-title" x-text="heading"></h1>
+    <p class="subtle" x-text="total + ' 个话题 · ' + cats.length + ' 个分类'"></p>
+
+    <div class="tabs">
+      <template x-for="s in sorts" :key="s.key">
+        <button type="button" class="tab" :class="{ active: sort === s.key }" @click="setSort(s.key)" x-text="s.label"></button>
+      </template>
+      <a class="btn ghost new-topic-link" href="/new"><svg class="icon"><use href="#i-plus" /></svg>新话题</a>
+    </div>
+
+    <div class="skeleton-list" x-show="loading">
+      <template x-for="i in 5" :key="i"><div class="skeleton-row"><i></i><i></i></div></template>
+    </div>
+
+    <div class="empty-state" x-show="!loading && !topics.length">
+      <svg class="icon big"><use href="#i-message" /></svg>
+      <b>暂无话题</b>
+      <span>成为第一个发帖的人</span>
+      <a class="btn primary" href="/new">发布话题</a>
+    </div>
+
+    <div class="topic-list" x-show="!loading && topics.length">
+      <template x-for="t in topics" :key="t.id">
+        <a class="topic-row" :href="topicHref(t)">
+          <div class="topic-main">
+            <div class="topic-line">
+              <span class="pin" x-show="t.pinned" title="置顶">📌</span>
+              <template x-if="t.category">
+                <span class="cat-badge" :style="badge(t.category.color)" x-text="t.category.name"></span>
+              </template>
+              <span class="topic-name" x-text="t.title"></span>
+            </div>
+            <div class="topic-meta">
+              <span class="avatar-group">
+                <template x-for="p in participants(t).slice(0, 5)" :key="p.id">
+                  <span class="avatar xs" x-text="initial(p.username)"></span>
+                </template>
+              </span>
+              <template x-for="tg in (t.tags || []).slice(0, 3)" :key="tg.id">
+                <span class="tag-badge" x-text="'#' + tg.name"></span>
+              </template>
+              <span class="muted" x-text="(participants(t)[0]?.username || t.user?.username || '') + (t.last_posted_at ? ' · ' + timeAgo(t.last_posted_at) : '')"></span>
+            </div>
+          </div>
+          <span class="topic-stat" :class="{ accent: t.like_count > 0 }">
+            <svg class="icon"><use href="#i-arrow-up" /></svg><b x-text="t.like_count || 0"></b>
+          </span>
+          <span class="topic-stat"><svg class="icon"><use href="#i-eye" /></svg><b x-text="t.views_count || 0"></b></span>
+          <span class="topic-time muted" x-text="t.last_posted_at ? timeAgo(t.last_posted_at) : '—'"></span>
+        </a>
+      </template>
+    </div>
+
+    <!-- @include pagination -->
+  </section>
+</div>
