@@ -1,6 +1,8 @@
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
-import microlight from 'microlight';
+// 依赖库以 UMD 全局形式由 index.html 的 <script defer> 注入：
+// window.marked / window.DOMPurify / window.microlight。
+const marked = window.marked;
+const DOMPurify = window.DOMPurify;
+const microlight = window.microlight;
 
 marked.setOptions({ gfm: true, breaks: true });
 

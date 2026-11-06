@@ -14,7 +14,8 @@ React/Markdown 生态的体积买单。需求是把前端改用最新版 Alpine.
 版本列表也止于 3.17.5。以**可实际安装**的 `latest` = 3.17.5 为准，写入 `package.json` 精确版本。
 
 ## Decision
-1. 使用 **alpinejs 3.17.5**（npm ESM，`Alpine.start()`），Vite 8 纯 JS 构建，产物仍是 `web/dist/index.html`。
+1. 使用 **alpinejs 3.17.5**（ESM `module.min.js`，手动 `Alpine.start()`）。前端**零构建**：`marked`/`DOMPurify`/`microlight` 以 UMD min 版预置 `web/vendor/`，`alpinejs` 经 importmap 映射到本地 ESM；
+   模板改用运行时 `fetch('/src/views/*.html')` 注入 `#views`（取代 Vite 的 `?raw`）；`main.go` 改为 `//go:embed web`，直接嵌入源码目录，无 Vite/pnpm。
 2. 移除全部 React 生态依赖；Markdown 改为 `marked`(GFM + breaks) → `DOMPurify`(消毒) →
    `microlight 0.0.7`(高亮)，封装为 `x-markdown` 指令；编辑器改为原生 textarea + 工具栏。
    （高亮最初用 highlight.js，按用户要求改为 npm 上最新的 microlight 0.0.7。）
@@ -33,3 +34,8 @@ React/Markdown 生态的体积买单。需求是把前端改用最新版 Alpine.
   不做语言语法解析、不按语言包着色；编辑器预览为自绘，
   不再有 @uiw/react-md-editor 的完整工具栏（保留常用格式、表情、预览）。
 - 安全不变：来自后端的颜色值拼接进 style 前做 hex 校验；Markdown 输出消毒；外链加 `noopener`。
+
+## Update (2026-11-05)
+去除 pnpm + Vite 构建链。依赖库 min 文件落地到 `web/vendor/`（alpine 用 ESM module 版经 importmap 映射，marked/dompurify/microlight 用 UMD 全局）；
+`//go:embed web/dist` → `//go:embed web`，直接嵌入 `web/` 源码目录。验证：`go build`/`go test ./...` 通过，所有静态资源与 SPA fallback 返回 200，
+vendor 文件格式与导出符号已校验（alpine ESM default export、其余 UMD 全局）。沙箱内无 chromium，未能跑无头浏览器回归，改用 HTTP 冒烟 + vendor 文件校验替代。

@@ -20,11 +20,11 @@ import (
 	"github.com/labstack/echo/v5/middleware"
 )
 
-//go:embed web/dist
+//go:embed web
 var efs embed.FS
 
 func distSub() fs.FS {
-	sub, err := fs.Sub(efs, "web/dist")
+	sub, err := fs.Sub(efs, "web")
 	if err != nil {
 		panic(err)
 	}

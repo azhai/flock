@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/styles/app.css" />
     <title>Flock - 极简论坛</title>
   </head>
   <body>
@@ -136,6 +137,17 @@
       </div>
     </div>
 
+    <!-- 依赖库：本地 vendor min 版（随二进制 embed，无 CDN / 无构建步骤） -->
+    <script type="importmap">
+    {
+      "imports": {
+        "alpinejs": "/vendor/alpine.module.esm.min.js"
+      }
+    }
+    </script>
+    <script src="/vendor/marked.umd.js" defer></script>
+    <script src="/vendor/purify.min.js" defer></script>
+    <script src="/vendor/microlight.js" defer></script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

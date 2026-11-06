@@ -45,32 +45,29 @@ build: front
 	done
 	@echo "✅ Build success."
 
-## front: build frontend assets (vite build, Alpine.js)
+## front: 前端无需构建（原生 ESM + 本地 vendor，由 Go //go:embed web 直接嵌入）
 front:
-	@echo "Build frontend ..."
-	cd $(ADMIN_DIR) && pnpm run build
+	@echo "Frontend needs no build step (native ESM + local vendor, embedded via //go:embed web)"
 
-## run: build frontend then run main with go run
-run: front
+## run: run main with go run（前端无需构建）
+run:
 	go run ./
 
 ## server: 编译后端并启动（仅编译 + 运行二进制，不依赖前端构建）
 server: one
 	./bin/$(APP)
 
-## dev: start hot-reload backend (air) + frontend dev server (vite)
+## dev: 仅后端热重载（前端改完刷新浏览器即可，无构建步骤）
 dev:
 	@which air > /dev/null 2>&1 || go install github.com/air-verse/air@latest
-	@if [ ! -d "$(ADMIN_DIR)/node_modules" ]; then cd $(ADMIN_DIR) && pnpm install; fi
-	(cd $(ADMIN_DIR) && pnpm run dev &)
 	air
 
 ## mk: alias for dev (hot reload)
 mk: dev
 
-## clean: remove build artifacts and frontend dist
+## clean: remove build artifacts and node_modules
 clean:
-	rm -rf bin/* tmp/* $(ADMIN_DIR)/dist
+	rm -rf bin/* tmp/* $(ADMIN_DIR)/node_modules
 	@echo "✅ Clean complete."
 
 ## test: 运行 Go 测试（verbose + race + 覆盖率聚合），可 TAGS=... 透传

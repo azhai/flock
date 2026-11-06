@@ -1,5 +1,4 @@
-import Alpine from 'alpinejs';
-import './styles/app.css';
+import Alpine from 'alpinejs'; // 由 index.html 的 importmap 解析到 /vendor/alpine.module.esm.min.js（ESM，手动 start）
 
 import { registerStores } from './core/stores.js';
 import { createRouter } from './core/router.js';
@@ -7,28 +6,27 @@ import { registerMarkdownDirective } from './core/markdown.js';
 import { registerComponents } from './components.js';
 import { registerPages } from './pages/index.js';
 
-import sidebarHtml from './views/partials/sidebar.html?raw';
-import paginationHtml from './views/partials/pagination.html?raw';
-import editorHtml from './views/partials/editor.html?raw';
-import tagInputHtml from './views/partials/tag-input.html?raw';
-
-import homeHtml from './views/home.html?raw';
-import topicHtml from './views/topic.html?raw';
-import newTopicHtml from './views/new-topic.html?raw';
-import loginHtml from './views/login.html?raw';
-import registerHtml from './views/register.html?raw';
-import bookmarksHtml from './views/bookmarks.html?raw';
-import profileHtml from './views/profile.html?raw';
-import adminHtml from './views/admin.html?raw';
-
-const PARTIALS = {
-  sidebar: sidebarHtml,
-  pagination: paginationHtml,
-  editor: editorHtml,
-  'tag-input': tagInputHtml,
+// 模板片段与页面模板不再用 Vite 的 ?raw 导入，改为运行时 fetch（同域同源、由 Go embed 提供）。
+const PARTIAL_FILES = ['sidebar', 'pagination', 'editor', 'tag-input'];
+// 路由名 → 文件名（new 路由对应 new-topic.html）
+const VIEW_FILES = {
+  home: 'home', topic: 'topic', new: 'new-topic', login: 'login',
+  register: 'register', profile: 'profile', bookmarks: 'bookmarks', admin: 'admin',
 };
 
-// 模板片段都是构建期本地字符串（?raw），非用户输入；替换 {{var}} 后注入 DOM。
+let PARTIALS = {};
+let VIEWS = {};
+
+async function loadTemplates() {
+  await Promise.all(PARTIAL_FILES.map(async (n) => {
+    PARTIALS[n] = await (await fetch(`/src/views/partials/${n}.html`)).text();
+  }));
+  await Promise.all(Object.entries(VIEW_FILES).map(async ([name, file]) => {
+    VIEWS[name] = await (await fetch(`/src/views/${file}.html`)).text();
+  }));
+}
+
+// 模板片段都是本地字符串（运行时 fetch 得到），非用户输入；替换 {{var}} 后注入 DOM。
 function compose(tpl) {
   return tpl.replace(/<!--\s*@include\s+([\w-]+)(?:\s+(\{[^\n]*?\}))?\s*-->/g, (_, name, json) => {
     const fragment = PARTIALS[name] || '';
@@ -57,16 +55,10 @@ const router = createRouter(Alpine);
 Alpine.magic('go', () => router.go);
 Alpine.magic('router', () => router);
 
-document.getElementById('views').innerHTML = [
-  view('home', homeHtml),
-  view('topic', topicHtml),
-  view('new', newTopicHtml),
-  view('login', loginHtml),
-  view('register', registerHtml),
-  view('profile', profileHtml),
-  view('bookmarks', bookmarksHtml),
-  view('admin', adminHtml),
-].join('\n');
+// 等待模板就绪后再挂载视图并启动（top-level await，type=module 支持）。
+await loadTemplates();
+document.getElementById('views').innerHTML = Object.entries(VIEW_FILES)
+  .map(([name]) => view(name, VIEWS[name])).join('\n');
 
 router.start();
 Alpine.start();

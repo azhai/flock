@@ -16,6 +16,9 @@ bin/
 .superpowers/
 node_modules/
 vendor/
+# 例外：web/vendor 是前端零构建依赖（alpine/marked/dompurify/microlight 的 min 版），
+# 需随 //go:embed web 一同提交，不能按 Go 的 vendor/ 依赖目录忽略。
+!web/vendor/
 
 # Go workspace file
 go.work
@@ -46,6 +49,7 @@ uploads/
 .idea/
 .trae/
 .vscode/
+.workbuddy/
 *.swp
 *.swo
 *~

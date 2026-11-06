@@ -64,7 +64,7 @@ SQLite 存储（无需 CGO）；前端使用 Alpine.js 3 + 原生 CSS，支持 M
 | 前端 | [Alpine.js 3.17.5](https://alpinejs.dev/)、自建 History API 路由、`Alpine.store` 状态管理 |
 | UI | 原生 CSS（水粉画浅色主题）、内联 SVG 图标 |
 | Markdown | `marked`（GFM + breaks）、`DOMPurify` 消毒、`microlight` 代码高亮 |
-| 构建 | Go `go build`（CGO 关闭）、Vite 8 + pnpm |
+| 构建 | Go `go build`（CGO 关闭）；前端**零构建**：原生 ESM + 本地 vendor min，经 `//go:embed web` 直接嵌入单二进制 |
 
 ## 项目结构
 
@@ -79,15 +79,15 @@ flock/
 ├── helpers/             # 通用辅助函数（如 slugify）
 ├── cmd/
 │   └── import-so/       # 从 StackOverflow CSV 导入数据的小工具
-├── web/                 # 前端工程（Alpine.js + Vite）
-│   ├── index.html       # 外壳：Header、SVG 图标、Toast、#views 容器
+├── web/                 # 前端（Alpine.js，原生 ESM，零构建）
+│   ├── index.html       # 外壳：Header、SVG 图标、Toast、#views 容器、importmap + vendor 脚本
 │   ├── src/
-│   │   ├── main.js      # 入口：注册 store/data/指令、注入页面模板、启动 Alpine
+│   │   ├── main.js      # 入口：注册 store/data/指令、fetch 模板、启动 Alpine
 │   │   ├── core/        # API 封装、路由、状态、Markdown、工具函数
 │   │   ├── pages/       # 8 个页面的 Alpine.data 逻辑
 │   │   ├── views/       # 页面 HTML 模板 + partials（侧栏/分页/编辑器/标签）
 │   │   └── styles/      # app.css（全局样式 + Markdown 排版）
-│   └── vite.config.js   # 前端构建与开发代理配置
+│   └── vendor/          # 本地 vendor 依赖（alpine/marked/dompurify/microlight 的 min 版）
 ├── example.env          # 环境变量示例
 ├── Makefile             # 常用构建 / 运行 / 测试命令
 └── screenshot.png       # 界面截图
@@ -96,7 +96,7 @@ flock/
 ## 环境要求
 
 - **Go 1.27+**（见 `go.mod`）
-- **Node.js 20.19+（推荐 22）** 与 **pnpm**（Vite 8 要求）
+- 无需 Node.js / pnpm：前端为零构建的原生 ESM，依赖以 min 版预置在 `web/vendor/`
 - 无需安装数据库，默认使用文件型 SQLite
 
 > **本地依赖说明**：`go.mod` 中通过 `replace` 指令将 `github.com/azhai/gobus`
@@ -130,24 +130,18 @@ ADMIN_EMAIL=admin@flock.local
 
 > 生产环境务必修改 `JWT_SECRET` 与 `ADMIN_PASSWORD`。
 
-### 2. 安装前端依赖
+### 2. 一键启动（推荐）
 
-```bash
-cd web && pnpm install && cd ..
-```
-
-### 3. 一键启动（推荐）
-
-前端构建产物会被嵌入 Go 二进制，直接运行即可访问完整站点：
+前端为零构建的原生 ESM + 本地 vendor，**无需任何构建步骤**，直接运行即可访问完整站点：
 
 ```bash
 make run
 ```
 
-该命令会先执行前端构建（`vite build`），再运行后端 `go run ./`。
+该命令直接运行后端 `go run ./`（前端源码经 `//go:embed web` 嵌入）。
 启动后访问 **http://127.0.0.1:8080**。
 
-### 4. 开发模式（前后端热更新）
+### 3. 开发模式（后端热重载）
 
 ```bash
 make dev
@@ -156,12 +150,12 @@ make dev
 此命令会：
 
 1. 安装 `air`（Go 热重载工具，若未安装）；
-2. 启动 Vite 开发服务器（默认 http://127.0.0.1:5173）；
-3. 用 `air` 启动后端并监听 `.go` 文件变化。
+2. 用 `air` 启动后端并监听 `.go` 文件变化。
 
-开发时请访问 Vite 端口 **5173**，前端会通过代理把 `/api/v1` 请求转发到后端。
+前端改完（HTML / JS / CSS / vendor）直接刷新浏览器即可，无需构建或重启；
+`/api/v1` 走同源请求，无跨域。
 
-### 5. 编译为二进制
+### 4. 编译为二进制
 
 ```bash
 make one     # 本地单平台构建，产物在 bin/flock
@@ -174,7 +168,7 @@ make all     # 清理 + 本地构建 + 五平台交叉编译
 make server
 ```
 
-### 6. 运行测试
+### 5. 运行测试
 
 ```bash
 make test    # go test -race + 覆盖率
@@ -311,14 +305,14 @@ go run ./cmd/import-so -csv SO-go-48000.csv -batch 100
 ## 常见问题
 
 **Q：启动后页面空白或 404？**
-A：确认已执行前端构建（`make run` 会自动构建；单独用 `make server` 则不会）。
-`main.go` 通过 `//go:embed web/dist` 嵌入前端产物，必须先构建再编译后端。
+A：前端为零构建，经 `//go:embed web` 直接嵌入 `web/` 源码目录，无需构建。
+若页面空白，请检查 `web/vendor/`（4 个 min 库）与 `web/src/` 是否齐全，并查看浏览器控制台是否有加载错误。
 
 **Q：`go build` 报找不到 `github.com/azhai/gobus` / `goent`？**
 A：这两个依赖被 `replace` 到本地同级目录，请将 `gobus`、`goent` 仓库与 `flock` 放在同一父目录下。
 
-**Q：开发模式下接口 404 或跨域？**
-A：开发请访问 Vite 的 5173 端口，并确保后端已启动且 `SERVER_PORT` 与代理配置一致。
+**Q：开发时接口 404 或跨域？**
+A：直接访问后端端口（默认 8090）即可，前端同源加载 `/src` 与 `/vendor`，`/api/v1` 走同源请求，无跨域问题。
 
 **Q：如何修改初始管理员账号？**
 A：编辑 `.env` 中的 `ADMIN_USERNAME` / `ADMIN_PASSWORD`。仅当数据库中不存在该用户时才会创建。
